@@ -1,7 +1,7 @@
 ---
 id: ticket:9mtt9h6j
 kind: ticket
-status: ready
+status: complete_pending_acceptance
 change_class: code-behavior
 risk_class: low
 created_at: 2026-04-29T14:17:56Z
@@ -175,6 +175,21 @@ Expected on completion:
   exist
 - screenshot of Cloudflare billing notification thresholds
 
+Captured:
+
+- `uv run python scripts/smoke_r2.py` →
+  `OK head_bucket pipelines via https://<account>.r2.cloudflarestorage.com`
+  + `OK put_object s3://pipelines/smoke/placeholder.parquet`
+- `uv run python scripts/smoke_motherduck.py` →
+  `OK read r2://pipelines/smoke/placeholder.parquet` +
+  `(1, 'dream-job-radar smoke')`
+- `gh secret list` shows: `MOTHERDUCK_TOKEN`, `R2_ACCESS_KEY_ID`,
+  `R2_ACCOUNT_ID`, `R2_BUCKET`, `R2_SECRET_ACCESS_KEY` (all set
+  2026-04-29T22:53:27Z–22:53:30Z).
+- Cloudflare billing notifications configured (two thresholds, user
+  confirmed).
+- GitHub repo: `Doctacon/dream-job-radar`.
+
 # Critique Disposition
 
 Risk class: low
@@ -202,10 +217,18 @@ Cloudflare R2 / MotherDuck / GitHub vendor docs.
 
 # Acceptance Decision
 
-Accepted by: pending
-Accepted at: pending
-Basis: pending — acceptance criteria 1–8 all met with evidence.
-Residual risks: pending
+Accepted by: Connor
+Accepted at: 2026-04-29
+Basis: All 8 acceptance criteria met with evidence captured above
+(R2 bucket `pipelines`, R/W token, head_bucket green, MotherDuck reads
+R2 placeholder via secret, uv project + 5 deps, .gitignore correct,
+GitHub repo + 5 Actions secrets set, Cloudflare billing notifications
+configured).
+Residual risks:
+- R2 API token has no IP restriction (deliberate; CI will need
+  unrestricted access in W3). User accepted this trade-off.
+- One earlier credential set was exposed during a `grep` on `.env` and
+  has been rotated; only the rotated values are in use and stored.
 
 # Dependencies
 
@@ -221,3 +244,10 @@ Residual risks: pending
   `decision:0001-storage-backend-r2`. Eight acceptance criteria, all
   ticket-local. Status remains `ready`; readiness checklist still
   passes.
+- 2026-04-29 — ticket executed. uv project initialized, deps added
+  (dlt[filesystem], boto3, duckdb, pyarrow, python-dotenv); .gitignore
+  + .env.example + smoke scripts written; R2 bucket + token created
+  by user; MotherDuck R2 secret created by user; both smoke scripts
+  green; GitHub Actions secrets set via `gh secret set`; Cloudflare
+  billing notifications configured. Status →
+  `complete_pending_acceptance`. Awaiting commit + close.
