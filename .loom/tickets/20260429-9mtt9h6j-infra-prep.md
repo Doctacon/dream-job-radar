@@ -1,7 +1,7 @@
 ---
 id: ticket:9mtt9h6j
 kind: ticket
-status: complete_pending_acceptance
+status: closed
 change_class: code-behavior
 risk_class: low
 created_at: 2026-04-29T14:17:56Z
@@ -250,4 +250,7 @@ Residual risks:
   by user; MotherDuck R2 secret created by user; both smoke scripts
   green; GitHub Actions secrets set via `gh secret set`; Cloudflare
   billing notifications configured. Status →
-  `complete_pending_acceptance`. Awaiting commit + close.
+  `complete_pending_acceptance`.
+- 2026-04-29 — bootstrap committed and pushed to
+  `Doctacon/dream-job-radar` (commits c718c70, 29e1b17). Status →
+  `closed`. W0 done.

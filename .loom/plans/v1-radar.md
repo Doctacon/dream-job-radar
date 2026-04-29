@@ -3,7 +3,7 @@ id: plan:v1-radar
 kind: plan
 status: active
 created_at: 2026-04-29T14:17:56Z
-updated_at: 2026-04-29T14:17:56Z
+updated_at: 2026-04-29T23:35:00Z
 scope:
   kind: repository
   repositories:
@@ -144,22 +144,34 @@ Sequential, single ticket.
   workspace with R2 secret, uv-managed Python project, GitHub repo,
   Actions secrets. Verifies all
   credentials end-to-end. Likely write scope: new repo bootstrap files
-  only; no extractor code yet. Status: `ready`.
+  only; no extractor code yet. Status: `closed` (2026-04-29).
 
 ## Wave 1 — Walking skeleton (Greenhouse: onX)
 
 Sequential, single ticket.
 
-- `ticket:<TBD>` — dlt Greenhouse extractor for onX → R2 → MotherDuck
+- `ticket:gjkpkpum` — dlt Greenhouse extractor for onX → R2 → MotherDuck
   view → Dive. Title-keyword filter applied in dlt. Manual run only.
   Posture: observation-first (proves data lands, view queries, Dive
-  renders). Closes PM1.
+  renders). Closes PM1. Status: `ready`.
 
 ## Wave 2 — Remaining extractor kinds (parallel)
 
 Three independent tickets. No shared write scope beyond `pyproject.toml`
 and `uv.lock`. Coordinate by sequencing dependency adds, not by
 sequencing the extractor code.
+
+**Inherited pattern from Wave 1 (accepted 2026-04-29):** each
+extractor kind runs as its own dlt pipeline with
+`dataset_name = <source_kind>` and
+`bucket_url = s3://<bucket>/raw`. dlt's filesystem destination always
+prefixes `<dataset_name>/` under `bucket_url`, so this is what makes
+the observable layout `r2://<bucket>/raw/<source_kind>/<ats_slug>/`
+true. The `current_open_roles` view globs
+`r2://<bucket>/raw/*/*/*.parquet` and is invariant under new
+source kinds. dlt system tables (`_dlt_loads`, `_dlt_pipeline_state`,
+`_dlt_version`) live at `raw/<source_kind>/` and are excluded by the
+view's `WHERE filename NOT LIKE '%/_dlt_%'` filter.
 
 - `ticket:<TBD>` — Greenhouse extractor extended to Planet Labs
   (config-only addition; trivial reuse of Wave 1 resource).

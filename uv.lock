@@ -294,13 +294,14 @@ filesystem = [
 [[package]]
 name = "dream-job-radar"
 version = "0.1.0"
-source = { virtual = "." }
+source = { editable = "." }
 dependencies = [
     { name = "boto3" },
     { name = "dlt", extra = ["filesystem"] },
     { name = "duckdb" },
     { name = "pyarrow" },
     { name = "python-dotenv" },
+    { name = "requests" },
 ]
 
 [package.metadata]
@@ -310,6 +311,7 @@ requires-dist = [
     { name = "duckdb", specifier = ">=1.5.2" },
     { name = "pyarrow", specifier = ">=24.0.0" },
     { name = "python-dotenv", specifier = ">=1.2.2" },
+    { name = "requests", specifier = ">=2.33.1" },
 ]
 
 [[package]]
