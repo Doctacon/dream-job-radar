@@ -27,7 +27,7 @@ slip past on a dog walk.
 
 ## The Dive is the destination
 
-The end-state surface is a MotherDuck Dive over the S3-backed dataset. The
+The end-state surface is a MotherDuck Dive over the R2-backed dataset. The
 Dive itself is the product, not a consolation prize. Whether the Dive can
 also be iframe-embedded on `loughondata.com` is a bonus surface, not a
 gating requirement. A Dive accessed directly via its MotherDuck URL still
@@ -62,17 +62,34 @@ glanceable on a phone. Do not collapse the two.
 
 # Constraints
 
-## S3 is the system of record; MotherDuck reads it natively
+## R2 is the system of record; MotherDuck reads it natively
 
-Pipeline output lands in personal AWS S3. MotherDuck reads from S3 directly
-— no intermediate DuckDB file, no separate warehouse load step. This keeps
-the data layer portable: S3 survives any swap of compute or dashboard.
+Pipeline output lands in a personal Cloudflare R2 bucket. MotherDuck reads
+from R2 directly via its native R2 secret type — no intermediate DuckDB
+file, no separate warehouse load step, no AWS S3. This keeps the data
+layer portable (Parquet files in an S3-compatible store) and keeps the
+worst-case cost ceiling bounded (zero egress at every R2 tier). See
+`decision:0001-storage-backend-r2` for rejected alternatives.
 
-## Greenhouse-only ingestion at v1
+## Ingestion source must be a free, programmatic endpoint
 
-Initial ingestion uses the Greenhouse public API against a curated company
-list. Other ATS providers (Lever, Workday, Ashby, etc.) are out of scope for
-v1. Reconsider only after the loop is closed end-to-end.
+Each curated company is ingested via some endpoint that meets all of:
+
+- programmatically pullable (HTTP GET against an API or a public HTML page)
+- free at the request volume this project needs
+- no authenticated account required to read the listing
+
+In practice that allows:
+
+- Greenhouse public job-board API
+- Lever public job-board API
+- Ashby public job-board API (`api.ashbyhq.com/posting-api/job-board/<slug>`)
+- a public careers HTML page that can be scraped politely (page monitor)
+- a public sitemap that exposes role-shaped URLs (sitemap monitor)
+
+That excludes LinkedIn job alerts, gated career sites, and any source that
+requires a paid plan or login. A company that posts only on excluded sources
+is dropped from the curated list rather than added to v1 scope.
 
 ## Curated companies, not crawled internet
 
@@ -106,8 +123,8 @@ connections, but v1 is allowed to be a normal web page.
 
 ```
 dlt (Greenhouse API, curated companies, title keywords)
-  → personal AWS S3
-  → MotherDuck (reads from S3)
+  → personal Cloudflare R2 bucket
+  → MotherDuck (reads from R2)
   → Dive (canonical surface)
 GitHub Actions runs the pipeline on a schedule.
 ```
@@ -131,7 +148,7 @@ tracks application status. Out of scope until Phase 1 ships.
 
 - Bootstrap Loom (done)
 - Pick the curated v1 company list (anchors: GoHunt, onX)
-- Stand up the dlt → S3 → MotherDuck → Dive path
+- Stand up the dlt → R2 → MotherDuck → Dive path
 - Resolve iframe embed question opportunistically — does not block Phase 1
 
 # Open Constitutional Questions
@@ -154,3 +171,12 @@ tracks application status. Out of scope until Phase 1 ships.
 - 2026-04-29 — reframed Dive as the destination: the Dive itself is the
   product, iframe embed on loughondata.com is bonus surface only. Removed
   Plan-B-on-embed-failure framing.
+- 2026-04-29 — broadened ingestion: was Greenhouse-only at v1, now any free
+  programmatic endpoint (Greenhouse, Lever, polite HTML page monitor).
+  LinkedIn alerts and gated/paid sources stay excluded.
+- 2026-04-29 — added Ashby and sitemap-monitor to allowed source list after
+  ATS discovery research surfaced them (Mapbox = Ashby, GoHunt = sitemap).
+- 2026-04-29 — swapped storage backend from AWS S3 to Cloudflare R2 to
+  eliminate egress cost on MotherDuck reads and reduce blast radius from
+  the absent hard spend-cap. Codified in
+  `decision:0001-storage-backend-r2` and `research:storage-backend`.

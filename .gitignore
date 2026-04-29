@@ -1,0 +1,21 @@
+# Secrets
+.env
+.env.*
+!.env.example
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.python-version
+
+# Virtualenv
+.venv/
+
+# dlt working directories
+.dlt/
+_dlt_pipeline_state/
+*.dlt.duckdb
+
+# OS
+.DS_Store
