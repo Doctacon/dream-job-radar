@@ -20,7 +20,17 @@ WITH raw AS (
         title,
         url,
         location,
-        posted_at,
+        -- posted_at is heterogeneous across source kinds:
+        --   greenhouse / ashby / sitemap → ISO timestamp string parsed as
+        --     TIMESTAMP WITH TIME ZONE in their native parquet
+        --   page → empty string (page-monitor sources have no upstream
+        --     posting date)
+        -- union_by_name across these widens the column to VARCHAR. Cast
+        -- back to TIMESTAMP WITH TIME ZONE here so consumers (Dive,
+        -- ad-hoc SQL) can use strftime / extract directly. Empty strings
+        -- become NULL; honest evidence that page-monitor rows lack a
+        -- posted_at signal.
+        TRY_CAST(posted_at AS TIMESTAMP WITH TIME ZONE) AS posted_at,
         fetched_at
     FROM read_parquet(
         'r2://${R2_BUCKET}/raw/*/*/*.parquet',
