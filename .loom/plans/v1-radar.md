@@ -205,9 +205,12 @@ MotherDuck view unions all four prefixes correctly. Closes PM2.
 
 Sequential, single ticket.
 
-- `ticket:<TBD>` — GitHub Actions cron + R2 creds + dlt run, with
-  per-company error isolation so one broken board does not fail the
-  run. One-week observation period. Closes PM3.
+- `ticket:usz502u5` — GitHub Actions cron + per-source error
+  isolation + scripted view-apply + N→0 health check. One-week
+  observation period included as acceptance evidence. Closes PM3.
+  Status: `ready` (2026-04-30). Inherits FIND-001 + FIND-007
+  (page-monitor critique) and FIND-008 (walking-skeleton critique)
+  as explicit constraints.
 
 ## Wave 4 — Blog post
 
