@@ -333,6 +333,29 @@ explanation that should not live only in this ticket. Promote a
 `wiki:extractor-shape` page during the retrospective pass after this
 ticket closes.
 
+Promoted 2026-04-30 during the retrospective:
+
+- `wiki:extractor-shape` (new) — captures the dataset_name = source_kind
+  pattern, the R2 path contract, the `current_open_roles` column shape,
+  the title-keyword filter posture, the `posted_at` semantic, the dlt
+  system-table sibling layout, and the hatchling packaging quirk. Cites
+  FIND-005, FIND-006, FIND-007 from `critique:walking-skeleton-iter1`.
+
+Direct record fixes (not new pages):
+
+- `plan:v1-radar` Surface section — `open_roles` → `current_open_roles`
+  to match the implemented view.
+- `initiative:close-the-loop` M2 — same naming reconciliation.
+
+Intentionally not promoted:
+
+- A `tests/extractors/...` follow-up (FIND-007) was not promoted as a
+  ticket; defer until Wave 2 reuses the resource shape and gives unit
+  tests something concrete to constrain. If Wave 2 surfaces a
+  regression that tests would have caught, promote then.
+- The view-materialization one-liner (FIND-008) stays where it is until
+  Wave 3 owns scheduled-run scripting.
+
 # Acceptance Decision
 
 Accepted by: Connor
@@ -411,3 +434,9 @@ Soft references:
   decision deferred to PM4 (blog-post ticket). Parent accepted the
   ticket; status → `closed`. PM1 of `plan:v1-radar` closed. Next:
   retrospective pass to promote `wiki:extractor-shape`, then Wave 2.
+- 2026-04-30 — Retrospective complete. Promoted
+  `wiki:extractor-shape`. Reconciled `open_roles` →
+  `current_open_roles` in `plan:v1-radar` and
+  `initiative:close-the-loop`. FIND-007 (no tests) and FIND-008
+  (view-apply scripting) deferred with explicit rationale; see Wiki
+  Disposition.

@@ -106,7 +106,7 @@ roles to a known R2 prefix, manually invoked.
 ## M2 — MotherDuck queries R2 directly
 
 MotherDuck workspace reads the R2 prefix via its native R2 secret and
-exposes a queryable view over current open roles.
+exposes the `current_open_roles` view.
 
 ## M3 — Dive ships
 

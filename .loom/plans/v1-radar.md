@@ -76,7 +76,7 @@ R2 prefix per source kind, dlt-managed schema, append semantics with a
 ## Surface
 
 MotherDuck view that unions across R2 prefixes into a single
-`open_roles` shape, then a Dive over that view.
+`current_open_roles` shape, then a Dive over that view.
 
 ## Scheduling
 
