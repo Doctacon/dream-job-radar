@@ -324,3 +324,10 @@ Soft references:
   + FIND-007 from `critique:page-monitor-iter1` and FIND-008 from
   `critique:walking-skeleton-iter1`. Next route: Ralph
   implementation packet.
+- 2026-04-30 — Ralph packet compiled at
+  `.loom/packets/ralph/actions-cron-20260430T031009Z.md` (style:
+  reference-first, posture: observation-first, source SHA
+  `91b174d`). Awaiting child execution. Note: child ships the
+  artifacts (scripts + workflow); AC5 (first scheduled run) and
+  AC6 (one-week window) are explicit parent acceptance work after
+  the child returns.
