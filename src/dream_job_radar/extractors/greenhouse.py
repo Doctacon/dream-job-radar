@@ -17,7 +17,7 @@ import requests
 GREENHOUSE_API = "https://boards-api.greenhouse.io/v1/boards/{slug}/jobs"
 USER_AGENT = "dream-job-radar/0.1"
 TITLE_KEYWORDS = ("data", "engineer", "gis", "geospatial")
-DEFAULT_BOARDS = ("onxmaps",)
+DEFAULT_BOARDS = ("onxmaps", "planetlabs")
 
 
 def _title_matches(title: str) -> bool:

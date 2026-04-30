@@ -176,8 +176,10 @@ source kinds. dlt system tables (`_dlt_loads`, `_dlt_pipeline_state`,
 `_dlt_version`) live at `raw/<source_kind>/` and are excluded by the
 view's `WHERE filename NOT LIKE '%/_dlt_%'` filter.
 
-- `ticket:<TBD>` — Greenhouse extractor extended to Planet Labs
-  (config-only addition; trivial reuse of Wave 1 resource).
+- `ticket:tiv8bsu7` — Greenhouse extractor extended to Planet Labs
+  (config-only addition; trivial reuse of Wave 1 resource). Status:
+  `closed` (2026-04-30). 36 roles landed at
+  `r2://pipelines/raw/greenhouse/planetlabs/`.
 - `ticket:<TBD>` — Ashby extractor for Mapbox.
 - `ticket:<TBD>` — Page monitor extractor for Regrid + Felt (one dlt
   resource that polls HTML and emits role records).
