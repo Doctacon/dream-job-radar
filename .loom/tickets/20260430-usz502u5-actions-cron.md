@@ -1,11 +1,11 @@
 ---
 id: ticket:usz502u5
 kind: ticket
-status: review_required
+status: complete_pending_acceptance
 change_class: code-behavior
 risk_class: high
 created_at: 2026-04-30T03:06:26Z
-updated_at: 2026-04-30T03:25:00Z
+updated_at: 2026-04-30T03:40:14Z
 scope:
   kind: repository
   repositories:
@@ -294,14 +294,19 @@ Greenhouse split verified — per-source entry point works
 end-to-end and the all-sources radar meta-runner still chains
 all four pipelines without row-count regression.
 
-AC4 — pending (parent acceptance work, requires push +
-manual workflow_dispatch run on GitHub).
+AC4 — satisfied 2026-04-30T03:40:14Z. Manual workflow_dispatch
+run completed in 41s, conclusion `success`. All steps green:
+checkout, setup-uv, uv sync, greenhouse, ashby, sitemap, page,
+apply_views, health_check.
+Run URL:
+`https://github.com/Doctacon/dream-job-radar/actions/runs/25146099357`.
+Cosmetic warnings (Node.js 20 deprecation notice, transient
+GitHub cache-service failure) noted but not load-bearing.
 
-AC5 — pending (parent acceptance work, requires first
-scheduled cron firing after merge).
+AC5 — pending (waiting for first scheduled cron firing at
+12:00 UTC after merge).
 
-AC6 — pending (parent acceptance work, one-week observation
-window).
+AC6 — pending (one-week observation window; user-tracked).
 
 AC7 — README updated: pointer to `apply_views.py`, pointer to
 `health_check.py`, "Scheduled refresh" section documenting the
@@ -404,3 +409,9 @@ Soft references:
   AC5 (first scheduled run), AC6 (one-week window) require
   parent + time. Ticket stays `review_required` until parent
   merges and exercises the workflow.
+- 2026-04-30 — Parent pushed; manual `gh workflow run refresh.yml`
+  completed end-to-end in 41s. Run URL
+  `https://github.com/Doctacon/dream-job-radar/actions/runs/25146099357`,
+  conclusion `success`. AC4 satisfied. Status →
+  `complete_pending_acceptance`. AC5 + AC6 still gated on time
+  (first scheduled firing + one-week window).
