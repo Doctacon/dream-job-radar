@@ -4,7 +4,7 @@ kind: wiki
 page_type: concept
 status: active
 created_at: 2026-04-30T00:22:47Z
-updated_at: 2026-04-30T02:40:00Z
+updated_at: 2026-04-30T03:10:00Z
 scope:
   kind: repository
   repositories:
@@ -254,15 +254,97 @@ When a sharded sitemap is the only path forward, decide explicitly:
 either (a) implement single-level recursion, or (b) point at the
 specific sub-sitemap that contains role pages directly.
 
+## Page-monitor sources (HTML scraping, no API)
+
+Some sources have no ATS and no JSON-LD — open roles are
+hand-maintained in HTML on a careers page or job board. v1 covers
+two: Regrid (hosted on a Gusto job board) and Felt (Webflow
+careers page).
+
+The pattern:
+
+1. Fetch the careers / board page.
+2. Apply a per-site parser strategy (regex against
+   site-specific class names) to extract role records.
+3. Apply v1 keyword filter to titles.
+4. Yield matched roles via `_normalize`.
+
+### Per-site parser dispatch
+
+Each site spec carries a `parser_kind` string. The extractor
+dispatches to the matching parser (`_parse_gusto_board`,
+`_parse_felt_careers`, etc.). Adding a new page-monitor site means:
+
+- add a new `_parse_<shape>(html, spec)` function
+- add a new `parser_kind` literal recognized by `_parse(...)`
+- add a `SiteSpec` to `DEFAULT_SITES`
+
+Parsers can also share strategies (multiple sites can use the same
+Gusto-board pattern if Gusto-hosted).
+
+### Regex fragility — the fundamental constraint
+
+Page-monitor parsers depend on exact upstream class names:
+
+- Felt: `<div class="h4 careers">TITLE</div>`
+- Gusto: `<a class="block hover:bg-gray-50" href="...">` +
+  `<h3 class="text-lg">TITLE</h3>`
+
+Webflow regenerations or Tailwind class re-shuffling on either
+host can silently produce 0 matches even when humans see roles on
+the page. The MATCH/skip log is the only run-time signal.
+
+Operator convention: each `site_resource` prints
+`[page:<slug>] parsed N role(s) from page` followed by per-role
+MATCH/skip lines. Wave 3 (scheduling) should treat a transition
+from N>0 to 0 as a loud failure, not a silent count change.
+
+### Felt is special: no per-role URL, apply via mailto
+
+Felt's careers page does not link each role to a per-role page;
+applying is via `mailto:hello@felt.com`. The Felt parser uses the
+careers page URL itself as `url` for every Felt row. Multiple Felt
+rows therefore share the same `url`. If a future Dive iteration
+wants to surface a structured apply-action, capture mailto in a
+new column then; do not extend the canonical row pre-emptively.
+
+## role_id strategies across source kinds
+
+Different source kinds use different identity strategies. Each is
+correct for its source.
+
+| source_kind | site         | role_id derivation                                | rename-stable? |
+|-------------|--------------|---------------------------------------------------|----------------|
+| greenhouse  | onxmaps      | `str(job["id"])` — Greenhouse integer            | yes            |
+| greenhouse  | planetlabs   | `str(job["id"])` — Greenhouse integer            | yes            |
+| ashby       | Mapbox       | `str(job["id"])` — Ashby UUID                    | yes            |
+| sitemap     | gohunt       | last URL path segment                            | NO — slug rename creates new role |
+| page        | regrid       | trailing UUID of Gusto posting slug              | yes            |
+| page        | felt         | sha1(`slug + ":" + title`)[:16]                  | NO — title rename creates new role |
+
+Rule for new source kinds: **if the upstream provides a stable
+machine-id, use it; otherwise hash a stable content-derived key
+and accept that renames break identity continuity.** Document the
+choice when adding a new site.
+
 ## `posted_at` semantic
 
-For Greenhouse, `posted_at` comes from the upstream `updated_at`. So
-it is "last-modified at the source", not strictly "first-posted at the
-source". Other source kinds may expose a true creation timestamp; if
-the divergence becomes meaningful, rename the column to
-`source_updated_at` or split into `posted_at` and `last_modified_at`
-during a Wave 2 spec pass. Until then, `posted_at` carries the
-"updated" interpretation across all source kinds.
+`posted_at` carries different upstream semantics by source kind:
+
+| source_kind | site         | upstream field                                |
+|-------------|--------------|-----------------------------------------------|
+| greenhouse  | (all)        | `updated_at` ("last modified at source")     |
+| ashby       | (all)        | `publishedAt` (true publication timestamp)   |
+| sitemap     | gohunt       | JSON-LD `datePublished` (fallback `dateModified`) |
+| page        | regrid+felt  | `""` (no upstream signal exists)             |
+
+Consumers that want a unified "recency" signal should use the
+view-derived `first_seen_at` instead — it is the same shape across
+every source kind: when the pipeline first observed the role.
+
+If the upstream-semantic divergence becomes meaningful, split the
+column into `posted_at` (true creation when known) and
+`last_modified_at` during a future spec pass.
 
 ## Project packaging
 
@@ -334,3 +416,10 @@ page should link forward to them.
   (the pattern, role_id derivation, JSON-LD regex tradeoff,
   sitemap-index escalation). Defensive-checks section extended
   with the sitemap-presence-is-the-signal note.
+- 2026-04-30 — extended after `ticket:k0ftbmsi` (page-monitor →
+  Regrid + Felt) retrospective and Wave 2 close-out. Added: full
+  page-monitor section (per-site parser dispatch, regex
+  fragility, MATCH/skip log convention, Felt-as-careers-page
+  note); role_id strategies comparison table across all 4 source
+  kinds; `posted_at` semantic table replacing the
+  Greenhouse-only paragraph.

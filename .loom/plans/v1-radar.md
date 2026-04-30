@@ -186,8 +186,11 @@ view's `WHERE filename NOT LIKE '%/_dlt_%'` filter.
   Iteration surfaced a list-fields-create-child-table bug; canonical
   shape now forbids Python list values. View hardened with
   NOT NULL guards on dedup partition keys.
-- `ticket:<TBD>` — Page monitor extractor for Regrid + Felt (one dlt
-  resource that polls HTML and emits role records).
+- `ticket:k0ftbmsi` — Page monitor extractor for Regrid + Felt
+  (per-site HTML parsing). Status: `closed` (2026-04-30). Felt
+  yielded 1 match (Sales/Solution Engineer); Regrid yielded 0.
+  PM2 of `plan:v1-radar` closes with this ticket — all four v1
+  source kinds shipped.
 - `ticket:xwfvoj4o` — Sitemap monitor extractor for GoHunt
   (sitemap.xml + per-URL JSON-LD parse). Status: `closed`
   (2026-04-30). 4 sitemap URLs fetched, all skipped by keyword

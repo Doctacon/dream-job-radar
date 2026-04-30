@@ -13,6 +13,8 @@ Source kinds and ATS slugs covered today:
 | `greenhouse` | `planetlabs` | https://boards-api.greenhouse.io/v1/boards/planetlabs/jobs            |
 | `ashby`      | `Mapbox`     | https://api.ashbyhq.com/posting-api/job-board/Mapbox (case-sensitive) |
 | `sitemap`    | `gohunt`     | https://www.gohunt.com/sitemap.xml + per-URL JSON-LD scrape           |
+| `page`       | `regrid`     | https://jobs.gusto.com/boards/regrid-... (Gusto-hosted board)         |
+| `page`       | `felt`       | https://felt.com/careers (Webflow page; apply via mailto)             |
 
 ## Run the pipeline
 
@@ -37,9 +39,13 @@ uv run python -m dream_job_radar.pipelines.ashby
 # (0-row outcomes are honest; the resource yields only roles whose
 # titles match the v1 keyword filter.)
 uv run python -m dream_job_radar.pipelines.sitemap
+
+# Page-monitor slice → s3://$R2_BUCKET/raw/page/<slug>/
+# Per-site HTML parsing for sources without an API.
+uv run python -m dream_job_radar.pipelines.page
 ```
 
-Run all sources sequentially (Greenhouse, then Ashby, then sitemap):
+Run all sources sequentially (Greenhouse → Ashby → sitemap → page):
 
 ```bash
 uv run python -m dream_job_radar.pipelines.radar
