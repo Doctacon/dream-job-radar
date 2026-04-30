@@ -12,6 +12,7 @@ Source kinds and ATS slugs covered today:
 | `greenhouse` | `onxmaps`    | https://boards-api.greenhouse.io/v1/boards/onxmaps/jobs               |
 | `greenhouse` | `planetlabs` | https://boards-api.greenhouse.io/v1/boards/planetlabs/jobs            |
 | `ashby`      | `Mapbox`     | https://api.ashbyhq.com/posting-api/job-board/Mapbox (case-sensitive) |
+| `sitemap`    | `gohunt`     | https://www.gohunt.com/sitemap.xml + per-URL JSON-LD scrape           |
 
 ## Run the pipeline
 
@@ -26,11 +27,19 @@ Prerequisites:
 Run a single source kind:
 
 ```bash
+# Greenhouse slice (onx + planetlabs) → s3://$R2_BUCKET/raw/greenhouse/<slug>/
+# Currently invoked via the meta-runner; per-source entry point lands in Wave 3.
+
 # Ashby slice → s3://$R2_BUCKET/raw/ashby/<slug>/
 uv run python -m dream_job_radar.pipelines.ashby
+
+# Sitemap-monitor slice → s3://$R2_BUCKET/raw/sitemap/<slug>/
+# (0-row outcomes are honest; the resource yields only roles whose
+# titles match the v1 keyword filter.)
+uv run python -m dream_job_radar.pipelines.sitemap
 ```
 
-Run all sources sequentially (Greenhouse, then Ashby):
+Run all sources sequentially (Greenhouse, then Ashby, then sitemap):
 
 ```bash
 uv run python -m dream_job_radar.pipelines.radar

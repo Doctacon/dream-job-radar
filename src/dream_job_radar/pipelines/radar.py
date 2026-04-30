@@ -25,6 +25,7 @@ from dream_job_radar.extractors.greenhouse import (
     board_resources as greenhouse_resources,
 )
 from dream_job_radar.pipelines import ashby as ashby_pipeline
+from dream_job_radar.pipelines import sitemap as sitemap_pipeline
 from dream_job_radar.pipelines._r2 import r2_destination
 
 PIPELINE_NAME = "dream_job_radar"
@@ -51,6 +52,10 @@ def run_all() -> None:
     print("[radar] running ashby pipeline")
     print("=" * 72)
     ashby_pipeline.run()
+    print("=" * 72)
+    print("[radar] running sitemap pipeline")
+    print("=" * 72)
+    sitemap_pipeline.run()
 
 
 def main() -> None:

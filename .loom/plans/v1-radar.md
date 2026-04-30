@@ -188,9 +188,12 @@ view's `WHERE filename NOT LIKE '%/_dlt_%'` filter.
   NOT NULL guards on dedup partition keys.
 - `ticket:<TBD>` — Page monitor extractor for Regrid + Felt (one dlt
   resource that polls HTML and emits role records).
-- `ticket:<TBD>` — Sitemap monitor extractor for GoHunt (one dlt
-  resource that fetches sitemap.xml, filters for role-shaped URLs,
-  fetches each new URL, parses title and posting date).
+- `ticket:xwfvoj4o` — Sitemap monitor extractor for GoHunt
+  (sitemap.xml + per-URL JSON-LD parse). Status: `closed`
+  (2026-04-30). 4 sitemap URLs fetched, all skipped by keyword
+  filter (truthful 0-match outcome — retail/media roles only
+  today). Pipeline catches future data/engineer/GIS/geospatial
+  posts automatically.
 
 After Wave 2 returns, parent reconciles: integration test that the
 MotherDuck view unions all four prefixes correctly. Closes PM2.

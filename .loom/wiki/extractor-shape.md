@@ -4,7 +4,7 @@ kind: wiki
 page_type: concept
 status: active
 created_at: 2026-04-30T00:22:47Z
-updated_at: 2026-04-30T01:18:00Z
+updated_at: 2026-04-30T02:40:00Z
 scope:
   kind: repository
   repositories:
@@ -172,6 +172,10 @@ Examples:
 - Ashby: `if not job.get("isListed", True): continue`
 - Greenhouse: no equivalent flag in the public `/jobs` endpoint;
   the API only returns published roles, so no extra check needed.
+- Sitemap-monitor sources (e.g. GoHunt): no flag exists. Sitemap
+  presence IS the publishedness signal; if a URL appears in
+  `sitemap.xml`, the role is considered live. The check is omitted
+  intentionally, not forgotten.
 - Future source kinds: check the upstream docs for a
   `published`, `isLive`, `status == "open"`, or similar flag and
   apply it defensively even if today's data does not appear to need
@@ -189,6 +193,66 @@ Do not dedup-by-title in the extractor or the view. If the Dive
 ever needs a "deduplicated by title" surface, build it as a
 sibling view at the Dive layer; the canonical view stays
 role_id-keyed.
+
+## Sitemap-monitor sources (CMS-driven, no ATS)
+
+Some companies don't use any ATS. Their job posts ship as CMS
+articles, indexed in `sitemap.xml`. GoHunt is the v1 example.
+
+The pattern:
+
+1. Fetch the company's public `sitemap.xml`.
+2. Filter `<loc>` entries by a substring heuristic
+   (e.g. `"job-opportunity"` for GoHunt).
+3. For each matching URL, fetch the role page (one HTTP GET each;
+   sleep ~0.5s between fetches to be polite).
+4. Extract the first `<script type="application/ld+json">` block
+   whose `@type` is `"Article"` (JSON-LD is the cleanest source of
+   structured metadata on CMS pages).
+5. Pull `headline`, `datePublished`, `url` from the Article block.
+6. Apply the v1 title-keyword filter to `headline`.
+7. Yield matched roles via `_normalize`.
+
+### `role_id` derivation
+
+For sitemap-monitor sources, the upstream has no UUID — the URL
+slug IS the de-facto identity. Today's implementation derives
+`role_id = urlsplit(article_url).path.rstrip("/").split("/")[-1]`.
+
+**Constraint:** if the upstream renames a slug (typo fix, SEO
+change, title rewording), the next pipeline run sees a "new" role
+with a fresh `first_seen_at`, and the old observation drops out of
+the view (no fresh `fetched_at` to win the dedup partition). The
+old parquet is still in R2 but invisible to the public view.
+
+For v1 this is acceptable. If slug renames become a real problem,
+consider hashing `headline + canonical_url_host` as a secondary
+identity. Defer until a real rename event surfaces.
+
+### JSON-LD parsing tradeoff
+
+`extractors/sitemap.py` extracts JSON-LD via regex
+(`<script type="application/ld+json">...</script>`) rather than
+`BeautifulSoup` or `lxml`. The regex is fragile in theory (a literal
+`</script>` inside a JSON string would prematurely end the match),
+but the JSON spec forbids unescaped `</script>` literals — the only
+way one would appear is `"<\/script>"`, which the regex does not
+trigger on.
+
+If a future source kind embeds odd content that breaks the regex,
+switch to `lxml.html` (already a transitive dep) or add
+`beautifulsoup4`. Do not pre-emptively swap.
+
+### Sitemap-index escalation
+
+`_fetch_sitemap_urls` checks the root tag and raises `ValueError`
+if it sees `<sitemapindex>`. v1 does not recurse into sub-sitemaps.
+If a host shards their sitemap, the failure is loud (raises) rather
+than silent (wrong data).
+
+When a sharded sitemap is the only path forward, decide explicitly:
+either (a) implement single-level recursion, or (b) point at the
+specific sub-sitemap that contains role pages directly.
 
 ## `posted_at` semantic
 
@@ -265,3 +329,8 @@ page should link forward to them.
   duplicate-by-title note (FIND-006), defensive listed/published
   checks (FIND-007). `departments` removed from canonical column
   table.
+- 2026-04-30 — extended after `ticket:xwfvoj4o` (sitemap →
+  GoHunt) retrospective. Added: full sitemap-monitor section
+  (the pattern, role_id derivation, JSON-LD regex tradeoff,
+  sitemap-index escalation). Defensive-checks section extended
+  with the sitemap-presence-is-the-signal note.
