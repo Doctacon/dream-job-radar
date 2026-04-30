@@ -180,7 +180,12 @@ view's `WHERE filename NOT LIKE '%/_dlt_%'` filter.
   (config-only addition; trivial reuse of Wave 1 resource). Status:
   `closed` (2026-04-30). 36 roles landed at
   `r2://pipelines/raw/greenhouse/planetlabs/`.
-- `ticket:<TBD>` — Ashby extractor for Mapbox.
+- `ticket:oy172mt9` — Ashby extractor for Mapbox. Status: `closed`
+  (2026-04-30). 59 roles landed at `r2://pipelines/raw/ashby/mapbox/`
+  (dlt lowercased the path; ats_slug data preserves `Mapbox`).
+  Iteration surfaced a list-fields-create-child-table bug; canonical
+  shape now forbids Python list values. View hardened with
+  NOT NULL guards on dedup partition keys.
 - `ticket:<TBD>` — Page monitor extractor for Regrid + Felt (one dlt
   resource that polls HTML and emits role records).
 - `ticket:<TBD>` — Sitemap monitor extractor for GoHunt (one dlt

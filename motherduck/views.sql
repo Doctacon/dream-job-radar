@@ -28,6 +28,9 @@ WITH raw AS (
         union_by_name = true
     )
     WHERE filename NOT LIKE '%/_dlt_%'
+      AND source_kind IS NOT NULL
+      AND ats_slug IS NOT NULL
+      AND role_id IS NOT NULL
 )
 SELECT
     company,

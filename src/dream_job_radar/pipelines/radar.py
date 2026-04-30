@@ -1,61 +1,61 @@
-"""Run the dream-job-radar walking-skeleton pipeline.
+"""Run all dream-job-radar slices.
 
-Loads Greenhouse board roles into Cloudflare R2 as Parquet under
-`s3://<bucket>/raw/greenhouse/<slug>/`.
+Runs the Greenhouse pipeline followed by every other source kind
+(currently Ashby). Each source kind is its own dlt pipeline with
+`dataset_name = <source_kind>` so the observable R2 layout is
+`raw/<source_kind>/<ats_slug>/...` per `wiki:extractor-shape`.
 
-Manual invocation:
+Per-source entry points (cleaner per-source error isolation when
+Wave 3 wires GitHub Actions cron):
+
+    uv run python -m dream_job_radar.pipelines.ashby
+
+Run all sources sequentially:
+
     uv run python -m dream_job_radar.pipelines.radar
 """
 
 from __future__ import annotations
 
-import os
-
 import dlt
-from dlt.destinations import filesystem
 from dotenv import load_dotenv
 
-from dream_job_radar.extractors.greenhouse import DEFAULT_BOARDS, board_resources
+from dream_job_radar.extractors.greenhouse import (
+    DEFAULT_BOARDS as GREENHOUSE_BOARDS,
+    board_resources as greenhouse_resources,
+)
+from dream_job_radar.pipelines import ashby as ashby_pipeline
+from dream_job_radar.pipelines._r2 import r2_destination
 
 PIPELINE_NAME = "dream_job_radar"
-SOURCE_KIND = "greenhouse"
-# dataset_name doubles as the source_kind path component. dlt's filesystem
-# destination always prefixes <dataset_name>/ under bucket_url, so the
-# observable layout is raw/<dataset_name>/<table_name>/... and the view
-# globs raw/*/*/*.parquet. Wave 2 source kinds run as their own datasets.
-DATASET_NAME = SOURCE_KIND
+GREENHOUSE_DATASET = "greenhouse"
 
 
-def _r2_destination() -> "filesystem":
-    bucket = os.environ["R2_BUCKET"]
-    account_id = os.environ["R2_ACCOUNT_ID"]
-    endpoint = f"https://{account_id}.r2.cloudflarestorage.com"
-    return filesystem(
-        bucket_url=f"s3://{bucket}/raw",
-        credentials={
-            "aws_access_key_id": os.environ["R2_ACCESS_KEY_ID"],
-            "aws_secret_access_key": os.environ["R2_SECRET_ACCESS_KEY"],
-            "endpoint_url": endpoint,
-            "region_name": "auto",
-        },
-        layout="{table_name}/{load_id}.{file_id}.{ext}",
-    )
-
-
-def run(boards: tuple[str, ...] = DEFAULT_BOARDS) -> None:
+def run_greenhouse(boards: tuple[str, ...] = GREENHOUSE_BOARDS) -> None:
     pipeline = dlt.pipeline(
         pipeline_name=PIPELINE_NAME,
-        destination=_r2_destination(),
-        dataset_name=DATASET_NAME,
+        destination=r2_destination(),
+        dataset_name=GREENHOUSE_DATASET,
         progress="log",
     )
-    info = pipeline.run(board_resources(boards), loader_file_format="parquet")
+    info = pipeline.run(greenhouse_resources(boards), loader_file_format="parquet")
     print(info)
+
+
+def run_all() -> None:
+    print("=" * 72)
+    print("[radar] running greenhouse pipeline")
+    print("=" * 72)
+    run_greenhouse()
+    print("=" * 72)
+    print("[radar] running ashby pipeline")
+    print("=" * 72)
+    ashby_pipeline.run()
 
 
 def main() -> None:
     load_dotenv()
-    run()
+    run_all()
 
 
 if __name__ == "__main__":

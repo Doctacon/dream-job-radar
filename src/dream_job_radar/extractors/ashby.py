@@ -1,8 +1,9 @@
-"""Greenhouse public board extractor.
+"""Ashby public job-board extractor.
 
-Yields keyword-filtered open roles per board slug. One dlt resource per slug
-so the filesystem destination lays files out under
-`<bucket>/raw/greenhouse/<slug>/`.
+Yields keyword-filtered open roles per board slug. One dlt resource
+per slug so the filesystem destination lays files out under
+`<bucket>/raw/ashby/<slug>/`. Slug case is preserved (Ashby URLs are
+case-sensitive: `Mapbox` works, `mapbox` 404s).
 """
 
 from __future__ import annotations
@@ -14,10 +15,10 @@ from typing import Iterator
 import dlt
 import requests
 
-GREENHOUSE_API = "https://boards-api.greenhouse.io/v1/boards/{slug}/jobs"
+ASHBY_API = "https://api.ashbyhq.com/posting-api/job-board/{slug}"
 USER_AGENT = "dream-job-radar/0.1"
 TITLE_KEYWORDS = ("data", "engineer", "gis", "geospatial")
-DEFAULT_BOARDS = ("onxmaps", "planetlabs")
+DEFAULT_BOARDS = ("Mapbox",)
 
 
 def _title_matches(title: str) -> bool:
@@ -26,16 +27,19 @@ def _title_matches(title: str) -> bool:
 
 
 def _normalize(job: dict, slug: str, fetched_at: str) -> dict:
-    location = (job.get("location") or {}).get("name")
+    location = job.get("location")
+    if not location:
+        secondaries = job.get("secondaryLocations") or []
+        location = secondaries[0] if secondaries else None
     return {
         "company": slug,
-        "source_kind": "greenhouse",
+        "source_kind": "ashby",
         "ats_slug": slug,
         "role_id": str(job["id"]),
         "title": job.get("title", ""),
-        "url": job.get("absolute_url", ""),
+        "url": job.get("jobUrl", ""),
         "location": location,
-        "posted_at": job.get("updated_at", ""),
+        "posted_at": job.get("publishedAt", ""),
         "fetched_at": fetched_at,
         "raw_json": json.dumps(job, sort_keys=True),
     }
@@ -43,12 +47,12 @@ def _normalize(job: dict, slug: str, fetched_at: str) -> dict:
 
 def _fetch_jobs(slug: str) -> list[dict]:
     headers = {"User-Agent": USER_AGENT, "Accept": "application/json"}
-    resp = requests.get(GREENHOUSE_API.format(slug=slug), headers=headers, timeout=30)
+    resp = requests.get(ASHBY_API.format(slug=slug), headers=headers, timeout=30)
     resp.raise_for_status()
     payload = resp.json()
     jobs = payload.get("jobs")
     if not isinstance(jobs, list):
-        raise ValueError(f"unexpected Greenhouse payload for {slug}: missing 'jobs' list")
+        raise ValueError(f"unexpected Ashby payload for {slug}: missing 'jobs' list")
     return jobs
 
 
@@ -59,6 +63,8 @@ def board_resource(slug: str):
     def _resource() -> Iterator[dict]:
         fetched_at = datetime.now(UTC).isoformat()
         for job in _fetch_jobs(slug):
+            if not job.get("isListed", True):
+                continue
             if not _title_matches(job.get("title", "")):
                 continue
             yield _normalize(job, slug, fetched_at)

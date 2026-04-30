@@ -1,21 +1,36 @@
 # dream-job-radar
 
-Walking-skeleton pipeline that extracts open roles from a public Greenhouse
-board (onX), filters to data/engineer/GIS/geospatial titles, writes Parquet
-to Cloudflare R2, and exposes a stable `current_open_roles` view in
-MotherDuck.
+Pipeline that extracts open roles from a curated set of public job
+boards, filters to data/engineering/GIS/geospatial titles, writes
+Parquet to Cloudflare R2, and exposes a stable `current_open_roles`
+view in MotherDuck.
+
+Source kinds and ATS slugs covered today:
+
+| source_kind  | slug         | upstream                                                              |
+|--------------|--------------|-----------------------------------------------------------------------|
+| `greenhouse` | `onxmaps`    | https://boards-api.greenhouse.io/v1/boards/onxmaps/jobs               |
+| `greenhouse` | `planetlabs` | https://boards-api.greenhouse.io/v1/boards/planetlabs/jobs            |
+| `ashby`      | `Mapbox`     | https://api.ashbyhq.com/posting-api/job-board/Mapbox (case-sensitive) |
 
 ## Run the pipeline
 
 Prerequisites:
 
-- W0 acceptance state: R2 bucket reachable, MotherDuck-side R2 secret in
-  place (proven via `scripts/smoke_r2.py` and `scripts/smoke_motherduck.py`).
+- W0 acceptance state: R2 bucket reachable, MotherDuck-side R2 secret
+  in place (proven via `scripts/smoke_r2.py` and
+  `scripts/smoke_motherduck.py`).
 - `.env` populated with `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY`,
   `R2_ACCOUNT_ID`, `R2_BUCKET`, `MOTHERDUCK_TOKEN`.
 
-Extract + load (Greenhouse `onxmaps` → R2 Parquet under
-`s3://$R2_BUCKET/raw/greenhouse/onxmaps/`):
+Run a single source kind:
+
+```bash
+# Ashby slice → s3://$R2_BUCKET/raw/ashby/<slug>/
+uv run python -m dream_job_radar.pipelines.ashby
+```
+
+Run all sources sequentially (Greenhouse, then Ashby):
 
 ```bash
 uv run python -m dream_job_radar.pipelines.radar
@@ -37,8 +52,10 @@ print('view materialized')
 Then in MotherDuck:
 
 ```sql
-SELECT count(*) FROM current_open_roles;
+SELECT source_kind, ats_slug, count(*) FROM current_open_roles
+GROUP BY 1, 2 ORDER BY 1, 2;
+
 SELECT title, location FROM current_open_roles
-WHERE source_kind = 'greenhouse' AND ats_slug = 'onxmaps'
+WHERE source_kind = 'ashby' AND ats_slug = 'Mapbox'
 LIMIT 10;
 ```
