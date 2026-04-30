@@ -1,11 +1,11 @@
 ---
 id: ticket:gjkpkpum
 kind: ticket
-status: review_required
+status: closed
 change_class: code-behavior
 risk_class: medium
 created_at: 2026-04-29T22:53:30Z
-updated_at: 2026-04-29T23:35:00Z
+updated_at: 2026-04-29T23:58:00Z
 scope:
   kind: repository
   repositories:
@@ -278,8 +278,24 @@ plus the one-liner that materializes `motherduck/views.sql` against
 MotherDuck.
 
 AC6 (Dive renders at stable URL) and AC7 (iframe embed attempt on
-`loughondata.com`) are parent work after this ticket reaches `closed`.
-They were intentionally out of the Ralph packet's scope.
+`loughondata.com`) were intentionally out of the Ralph packet's scope.
+
+AC7 — closed by policy 2026-04-29: iframe embed of MotherDuck Dives is a
+business-plan feature; this project runs on the free plan. Per
+`constitution:main`, embed is an explicit bonus surface, not a v1 gate.
+The published Dive URL will be linked from `loughondata.com` rather
+than embedded. No screenshot needed; this is a plan-level constraint,
+not a try-and-see outcome.
+
+AC6 — satisfied 2026-04-29: Dive saved at
+`https://app.motherduck.com/dives/391d1329-70d7-4223-89c8-d0dfde66ef7f`
+("dream-job-radar — open roles"). Renders KPI row (open roles,
+companies, locations, rows shown), `last_refresh` stamp, and a roles
+table sourced from `useSQLQuery` over
+`"acorn-granary"."main"."current_open_roles"`. Local preview scaffolded
+under `.dive-preview/` (gitignored apart from sources). Dive references
+the `acorn-granary` database, which is not yet shared with the org;
+sharing is a separate decision.
 
 # Critique Disposition
 
@@ -319,12 +335,26 @@ ticket closes.
 
 # Acceptance Decision
 
-Accepted by: pending
-Accepted at: pending
-Basis: pending — acceptance criteria 1–8 all met with evidence and the
-required critique profiles either passed or had findings resolved or
-explicitly accepted.
-Residual risks: pending
+Accepted by: Connor
+Accepted at: 2026-04-29T23:58:00Z
+Basis: AC1–AC6 + AC8 satisfied with observation-first evidence
+captured in the Evidence section. AC7 closed by policy
+(iframe embed unavailable on free plan; constitution treats embed as
+bonus). Required critique profiles ran
+(`critique:walking-skeleton-iter1`); verdict `pass_with_findings`,
+all 8 findings low/medium and tracked as deferred retrospective
+follow-up. PM1 of `plan:v1-radar` is now closed.
+Residual risks:
+- Inheritor pattern (one pipeline per source_kind, dataset_name =
+  source_kind) needs to land in a wiki page during the retrospective
+  before Wave 2 multiplies the choice; tracked via FIND-006.
+- Title-keyword filter is plain substring; revisit during Wave 2
+  retrospective if false-positive rate emerges (FIND-002).
+- `acorn-granary` is a personal database, not org-shared. The Dive
+  is accessible only to the owner's MotherDuck account today; PM4
+  link strategy will need either (a) sharing `acorn-granary` then,
+  or (b) a separate shared DB carved out for radar before publishing
+  the blog post. Decision deferred to PM4 ticket.
 
 # Dependencies
 
@@ -368,3 +398,16 @@ Soft references:
   deferred retrospective follow-up. AC6 (Dive) and AC7 (iframe embed)
   remain open as parent local work; once recorded, ticket can move to
   `complete_pending_acceptance`.
+- 2026-04-29 — AC7 closed by policy: iframe embed is business-plan
+  only on MotherDuck; project on free plan. Per `constitution:main`,
+  embed is a bonus surface, not a v1 gate. PM4 will link to the Dive
+  rather than embed. `plan:v1-radar` updated.
+- 2026-04-29 — AC6 satisfied: Dive saved via MotherDuck MCP at
+  `https://app.motherduck.com/dives/391d1329-70d7-4223-89c8-d0dfde66ef7f`.
+  Local preview scaffold lives at `.dive-preview/`. Status →
+  `complete_pending_acceptance`. Awaiting parent acceptance.
+- 2026-04-29 — Parent declined to share `acorn-granary`; the Dive
+  remains private to the owner's MotherDuck account for now. Sharing
+  decision deferred to PM4 (blog-post ticket). Parent accepted the
+  ticket; status → `closed`. PM1 of `plan:v1-radar` closed. Next:
+  retrospective pass to promote `wiki:extractor-shape`, then Wave 2.

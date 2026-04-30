@@ -108,7 +108,9 @@ unattended runs.
 
 ## PM4 — Part-two post live
 
-Blog post on `loughondata.com` links to (or embeds) the Dive.
+Blog post on `loughondata.com` links to the Dive. (Iframe embed is a
+business-plan-only MotherDuck feature; this project is on the free
+plan, so embed is closed by policy.)
 
 These map onto initiative milestones as: PM1 ⊆ M1+M2+M3 (for one source);
 PM2 = M1+M2+M3 broadened; PM3 = M4; PM4 = M5.
@@ -153,7 +155,8 @@ Sequential, single ticket.
 - `ticket:gjkpkpum` — dlt Greenhouse extractor for onX → R2 → MotherDuck
   view → Dive. Title-keyword filter applied in dlt. Manual run only.
   Posture: observation-first (proves data lands, view queries, Dive
-  renders). Closes PM1. Status: `ready`.
+  renders). Closes PM1. Status: `closed` (2026-04-29). Dive at
+  `https://app.motherduck.com/dives/391d1329-70d7-4223-89c8-d0dfde66ef7f`.
 
 ## Wave 2 — Remaining extractor kinds (parallel)
 
@@ -213,9 +216,9 @@ Sequential, single ticket.
   one "Open role" block; if listings move to a JS-rendered surface, the
   page monitor needs a headless browser. Mitigation: try plain HTML
   first; escalate to research if it fails.
-- **Iframe embed may be unavailable on personal MotherDuck plan.** Per
-  constitution, this is a bonus surface, not a blocker. Mitigation: PM4
-  links to the Dive if embed is unavailable.
+- **Iframe embed unavailable on free plan (confirmed 2026-04-29).**
+  Business-plan-only feature. Per constitution, this is a bonus
+  surface, not a blocker. PM4 links to the Dive instead of embedding.
 - **Scheduled run hits a rate limit or anti-bot heuristic.** Mitigation:
   conservative cron interval; per-source error isolation; backoff in
   page/sitemap monitors.
