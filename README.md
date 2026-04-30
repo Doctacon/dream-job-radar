@@ -30,7 +30,7 @@ Run a single source kind:
 
 ```bash
 # Greenhouse slice (onx + planetlabs) → s3://$R2_BUCKET/raw/greenhouse/<slug>/
-# Currently invoked via the meta-runner; per-source entry point lands in Wave 3.
+uv run python -m dream_job_radar.pipelines.greenhouse
 
 # Ashby slice → s3://$R2_BUCKET/raw/ashby/<slug>/
 uv run python -m dream_job_radar.pipelines.ashby
@@ -51,17 +51,17 @@ Run all sources sequentially (Greenhouse → Ashby → sitemap → page):
 uv run python -m dream_job_radar.pipelines.radar
 ```
 
-Materialize the MotherDuck view once (or any time the DDL changes):
+Materialize the MotherDuck view (idempotent — `CREATE OR REPLACE`):
 
 ```bash
-uv run python -c "
-import os, duckdb
-from dotenv import load_dotenv
-load_dotenv()
-sql = open('motherduck/views.sql').read().replace('\${R2_BUCKET}', os.environ['R2_BUCKET'])
-duckdb.connect(f\"md:?motherduck_token={os.environ['MOTHERDUCK_TOKEN']}\").execute(sql)
-print('view materialized')
-"
+uv run python scripts/apply_views.py
+```
+
+Health check (per-(source_kind, ats_slug) freshness; non-zero exit
+when a previously-observed slug went stale):
+
+```bash
+uv run python scripts/health_check.py
 ```
 
 Then in MotherDuck:
@@ -74,3 +74,31 @@ SELECT title, location FROM current_open_roles
 WHERE source_kind = 'ashby' AND ats_slug = 'Mapbox'
 LIMIT 10;
 ```
+
+## Scheduled refresh
+
+`.github/workflows/refresh.yml` runs the pipeline on cron:
+
+- **schedule:** daily at `0 12 * * *` (12:00 UTC = 5am Pacific /
+  8am Eastern)
+- **manual:** `gh workflow run refresh.yml` or the GitHub UI's
+  "Run workflow" button
+
+Workflow shape:
+
+1. Checkout, install `uv`, `uv sync`.
+2. Run each source kind in its own step with
+   `continue-on-error: true` (one source failing does not block
+   others).
+3. `scripts/apply_views.py` runs with `if: always()` so the view
+   DDL is reapplied even if a source step failed.
+4. `scripts/health_check.py` runs as a required step. Failure
+   here fails the workflow and triggers GitHub's email-on-failure.
+
+The five required secrets (`R2_ACCESS_KEY_ID`,
+`R2_SECRET_ACCESS_KEY`, `R2_ACCOUNT_ID`, `R2_BUCKET`,
+`MOTHERDUCK_TOKEN`) are configured at the repo level per Wave 0
+acceptance.
+
+`concurrency: { group: refresh, cancel-in-progress: false }` keeps
+two runs from racing on `_dlt_pipeline_state` writes.

@@ -1,0 +1,61 @@
+name: Refresh radar pipeline
+
+on:
+  schedule:
+    - cron: "0 12 * * *"
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+
+concurrency:
+  group: refresh
+  cancel-in-progress: false
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    env:
+      R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
+      R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+      R2_ACCOUNT_ID: ${{ secrets.R2_ACCOUNT_ID }}
+      R2_BUCKET: ${{ secrets.R2_BUCKET }}
+      MOTHERDUCK_TOKEN: ${{ secrets.MOTHERDUCK_TOKEN }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v3
+        with:
+          enable-cache: true
+
+      - name: Install Python project
+        run: uv sync
+
+      - name: Greenhouse pipeline
+        id: greenhouse
+        continue-on-error: true
+        run: uv run python -m dream_job_radar.pipelines.greenhouse
+
+      - name: Ashby pipeline
+        id: ashby
+        continue-on-error: true
+        run: uv run python -m dream_job_radar.pipelines.ashby
+
+      - name: Sitemap pipeline
+        id: sitemap
+        continue-on-error: true
+        run: uv run python -m dream_job_radar.pipelines.sitemap
+
+      - name: Page pipeline
+        id: page
+        continue-on-error: true
+        run: uv run python -m dream_job_radar.pipelines.page
+
+      - name: Apply MotherDuck views
+        if: always()
+        run: uv run python scripts/apply_views.py
+
+      - name: Health check (per-slug freshness)
+        run: uv run python scripts/health_check.py

@@ -1,11 +1,11 @@
 ---
 id: ticket:usz502u5
 kind: ticket
-status: ready
+status: review_required
 change_class: code-behavior
 risk_class: high
 created_at: 2026-04-30T03:06:26Z
-updated_at: 2026-04-30T03:06:26Z
+updated_at: 2026-04-30T03:25:00Z
 scope:
   kind: repository
   repositories:
@@ -262,6 +262,52 @@ Expected on completion (initial Ralph + acceptance window):
 - the first scheduled-run URL after merge.
 - the seven scheduled-run URLs covering the one-week window.
 
+Captured 2026-04-30T03:25Z (Ralph iteration 1):
+
+AC1 — `apply_views.py` runs idempotently:
+```
+$ uv run python scripts/apply_views.py
+view materialized
+$ uv run python scripts/apply_views.py
+view materialized
+```
+
+AC2 — `health_check.py` runs locally and exits 0:
+```
+[health] checking 4 observed slug(s); stale threshold = 36h
+[health] ok    ashby/Mapbox latest=...-07:00 (0.4h old) latest_count=59
+[health] ok    greenhouse/onxmaps latest=...-07:00 (0.4h old) latest_count=8
+[health] ok    greenhouse/planetlabs latest=...-07:00 (0.4h old) latest_count=36
+[health] ok    page/felt latest=...-07:00 (0.4h old) latest_count=1
+[health] PASS
+```
+
+AC3 — workflow YAML written; hand-validated against the packet
+contract. Verified: triggers (cron + workflow_dispatch),
+concurrency, permissions, env-from-secrets at job level,
+per-source `continue-on-error: true` with stable step ids,
+view-apply with `if: always()`, health-check required.
+`actionlint` not on PATH locally; GitHub's parser will be the
+final validator on push.
+
+Greenhouse split verified — per-source entry point works
+end-to-end and the all-sources radar meta-runner still chains
+all four pipelines without row-count regression.
+
+AC4 — pending (parent acceptance work, requires push +
+manual workflow_dispatch run on GitHub).
+
+AC5 — pending (parent acceptance work, requires first
+scheduled cron firing after merge).
+
+AC6 — pending (parent acceptance work, one-week observation
+window).
+
+AC7 — README updated: pointer to `apply_views.py`, pointer to
+`health_check.py`, "Scheduled refresh" section documenting the
+workflow shape + cron schedule + manual dispatch path + the
+five required secrets.
+
 # Critique Disposition
 
 Risk class: high
@@ -282,11 +328,20 @@ Required critique profiles:
   health-check false-positive rate, behavior under transient
   upstream failures)
 
-Findings: None — no critique yet.
+Findings: see `critique:actions-cron-iter1` (10 findings; 3
+medium, 7 low; none `changes_required`). Verdict:
+`pass_with_findings`.
 
-Disposition status: pending
+Disposition status: resolved-with-followup. FIND-001 (tighten
+threshold to 26h after AC6 passes), FIND-002 (wiki the
+freshness-vs-row-count rationale), FIND-007 (per-step env: to
+minimize secret exposure to third-party actions), FIND-010
+(time-dependent acceptance) all deferred to retrospective + AC6
+window. FIND-004 / FIND-006 resolved by inspection. None block
+ticket closure conceptually; AC4–AC6 are time/parent-gated.
 
-Deferral / not-required rationale: N/A — mandatory.
+Deferral / not-required rationale: N/A — mandatory critique
+performed.
 
 # Wiki Disposition
 
@@ -331,3 +386,21 @@ Soft references:
   artifacts (scripts + workflow); AC5 (first scheduled run) and
   AC6 (one-week window) are explicit parent acceptance work after
   the child returns.
+- 2026-04-30 — Ralph iteration 1 returned `continue`. Two scripts
+  + workflow YAML + greenhouse split shipped. Health-check
+  algorithm pivoted from row-count "N→0" to freshness staleness
+  because dlt does not write parquet for 0-yield runs (the
+  packet's literal check was unimplementable; the freshness check
+  captures the same FIND-001 scenario without false positives on
+  0-match-honest sources). Both scripts run locally; greenhouse
+  per-source entry point verified; radar meta-runner still chains
+  all four pipelines. Status → `review_required`. Critique pass
+  next.
+- 2026-04-30 — Mandatory critique landed at
+  `.loom/critique/actions-cron-iter1.md`. Verdict
+  `pass_with_findings`; 10 findings (3 medium, 7 low), none
+  `changes_required`. Acceptance recommendation: "active
+  follow-up required" — do not close today; AC4 (manual dispatch),
+  AC5 (first scheduled run), AC6 (one-week window) require
+  parent + time. Ticket stays `review_required` until parent
+  merges and exercises the workflow.
