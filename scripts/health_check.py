@@ -36,9 +36,13 @@ WITH all_fetches AS (
         fetched_at,
         count(*) AS n
     FROM read_parquet(
-        'r2://{bucket}/raw/*/*/*.parquet',
+        -- Match new hive layout (raw/<src>/<slug>/year=YYYY/month=MM/day=DD/<file>.parquet)
+        -- via recursive ** glob, with hive_partitioning=true so the
+        -- partition columns parse cleanly (mirrors motherduck/views.sql).
+        'r2://{bucket}/raw/*/*/**/*.parquet',
         filename = true,
-        union_by_name = true
+        union_by_name = true,
+        hive_partitioning = true
     )
     WHERE filename NOT LIKE '%/_dlt_%'
       AND source_kind IS NOT NULL
