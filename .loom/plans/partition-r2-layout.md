@@ -1,9 +1,9 @@
 ---
 id: plan:partition-r2-layout
 kind: plan
-status: active
+status: closed
 created_at: 2026-05-02T15:31:33Z
-updated_at: 2026-05-02T15:31:33Z
+updated_at: 2026-05-02T15:55:00Z
 scope:
   kind: repository
   repositories:

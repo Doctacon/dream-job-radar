@@ -1,9 +1,9 @@
 ---
 id: initiative:partition-r2-layout
 kind: initiative
-status: active
+status: closed
 created_at: 2026-05-02T15:31:33Z
-updated_at: 2026-05-02T15:31:33Z
+updated_at: 2026-05-02T15:55:00Z
 scope:
   kind: repository
   repositories:
@@ -156,3 +156,48 @@ Initiative drafted 2026-05-02 immediately after
 (`research:r2-hive-partitioning`) confirmed dlt placeholder
 support and DuckDB `hive_partitioning=true` behavior on R2.
 Ready to route into a single-ticket plan.
+
+## Close-out 2026-05-02
+
+Status → `closed`. Outcome by milestone:
+
+- **M1 — Layout shipped:** done. `ticket:f4p9p2g3` (closed).
+  Edits to `pipelines/_r2.py` and `motherduck/views.sql`. 89
+  historical flat parquets backfilled into hive paths in-place
+  (DuckDB `hive_partitioning=true` is strict; mixing layouts is
+  rejected, not gracefully NULLed). View row counts unchanged
+  pre/post. Manual cron dispatch run 25255565860 green
+  end-to-end (after a one-line follow-up fix to
+  `scripts/health_check.py` whose old glob matched zero files
+  post-backfill, run 25255532404 caught it).
+- **M2 — Wiki + retrospective:** done.
+  `wiki:extractor-shape` extended with new "R2 layout:
+  hive-partitioned" section covering dlt placeholders, DuckDB
+  `hive_partitioning=true` behavior, type-awareness for
+  partition columns, mixed-layout prohibition + migration
+  recipe, and explicit Iceberg / DuckLake / catalog deferral.
+  Old glob references in the wiki updated to the recursive
+  form. dataset_name table grew to include Rippling + Polymer
+  rows from prior initiative.
+
+State at close-out:
+
+- All R2 parquet under hive layout
+  `raw/<source_kind>/<ats_slug>/year=YYYY/month=MM/day=DD/...`.
+- View reads cleanly; row counts unchanged from pre-cutover.
+- Cron green on the new layout.
+- No data was rewritten — backfill used `s3.copy_object` +
+  `delete` (server-side).
+- Iceberg / DuckLake / catalog deferred. Revisit when v3+
+  scale or a "build Iceberg" resume goal forces the question.
+
+Carried forward as deferred follow-ups (not promoted to tickets
+today):
+
+- Same FIND set inherited from prior critiques: tighten
+  `STALE_THRESHOLD_HOURS`; per-step `env:` for secret
+  minimization; N→0 silent breakage detection for HTML / index
+  regex parsers.
+- Vibrant Planet parser when they post roles (carryover from
+  v2).
+- Iceberg integration if/when scale or resume goals demand it.

@@ -4,7 +4,7 @@ kind: wiki
 page_type: concept
 status: active
 created_at: 2026-04-30T00:22:47Z
-updated_at: 2026-05-02T14:30:00Z
+updated_at: 2026-05-02T15:55:00Z
 scope:
   kind: repository
   repositories:
@@ -49,22 +49,27 @@ source kind:
 | Ashby           | `ashby`      |
 | page monitor    | `page`       |
 | sitemap monitor | `sitemap`    |
+| Rippling        | `rippling`   |
+| Polymer         | `polymer`    |
 
 The dlt filesystem destination uses
 `bucket_url = s3://<R2_BUCKET>/raw` (no source-kind segment) and the
-default layout `{table_name}/{load_id}.{file_id}.{ext}`. Because dlt
+hive-partitioned layout
+`{table_name}/year={YYYY}/month={MM}/day={DD}/{load_id}.{file_id}.{ext}`
+(see "R2 layout: hive-partitioned" section). Because dlt
 unconditionally prefixes `<dataset_name>/` under `bucket_url`, the
-observable R2 layout becomes:
+observable R2 layout is:
 
 ```
-s3://<R2_BUCKET>/raw/<source_kind>/<table_name>/<load_id>.<file_id>.parquet
+s3://<R2_BUCKET>/raw/<source_kind>/<table_name>/year=YYYY/month=MM/day=DD/<load_id>.<file_id>.parquet
 ```
 
 For each pipeline, every "company" / board slug / tracked surface gets
-its own table name. Each slug → one resource → one table directory.
+its own table name. Each slug → one resource → one table directory,
+then one date-partition directory per cron firing.
 
-That makes `r2://<bucket>/raw/<source_kind>/<ats_slug>/` the path
-contract the view depends on.
+That makes `r2://<bucket>/raw/<source_kind>/<ats_slug>/year=*/month=*/day=*/`
+the path contract the view depends on.
 
 ## What lives next to the data
 
@@ -73,9 +78,119 @@ dlt writes auxiliary load metadata under
 `raw/<source_kind>/_dlt_pipeline_state/`,
 `raw/<source_kind>/_dlt_version/`, plus an empty `init` marker. These
 live as siblings of the table directories. Today they are JSONL or
-extensionless, so the view glob (`raw/*/*/*.parquet`) does not match
+extensionless, so the view glob (`raw/*/*/**/*.parquet`) does not match
 them, but the view also defends against future format changes with an
 explicit `WHERE filename NOT LIKE '%/_dlt_%'` filter.
+
+## R2 layout: hive-partitioned
+
+Set 2026-05-02 (`initiative:partition-r2-layout`). New parquet files
+land at:
+
+```
+raw/<source_kind>/<ats_slug>/year=YYYY/month=MM/day=DD/<load_id>.<file_id>.parquet
+```
+
+`year=`, `month=`, `day=` are Hive-standard `key=value` segments —
+DuckDB's `read_parquet(..., hive_partitioning=true)` recognizes them
+and exposes the date components as queryable columns for partition
+pruning.
+
+### dlt config
+
+`pipelines/_r2.py` configures `r2_destination()` with:
+
+```python
+layout="{table_name}/year={YYYY}/month={MM}/day={DD}/{load_id}.{file_id}.{ext}"
+```
+
+`{YYYY}`, `{MM}`, `{DD}` are dlt's built-in datetime placeholders.
+They resolve from the load-package timestamp (the time the cron
+run fired). All six source-kind pipelines inherit the layout from
+this single shared factory.
+
+### View read
+
+`motherduck/views.sql` reads the zone with:
+
+```sql
+read_parquet(
+  'r2://<bucket>/raw/*/*/**/*.parquet',
+  filename = true,
+  union_by_name = true,
+  hive_partitioning = true
+)
+```
+
+The recursive `**` glob matches the six-segment hive layout. The
+three-deep `*/*/*.parquet` glob from before the cutover would miss
+the new layout entirely.
+
+### Type-awareness
+
+DuckDB auto-types the partition columns:
+
+| column  | type    | notes                          |
+|---------|---------|--------------------------------|
+| `year`  | INTEGER | parsed from `year=2026`        |
+| `month` | VARCHAR | zero-padded; parsed from `month=05` |
+| `day`   | VARCHAR | zero-padded; parsed from `day=02` |
+
+WHERE clauses must respect this:
+
+```sql
+WHERE year = 2026 AND month = '05' AND day = '02'   -- correct
+WHERE year = '2026' AND month = 5                   -- type mismatch
+```
+
+### Mixed layouts not allowed under one glob
+
+DuckDB's `hive_partitioning=true` is **strict**: every file matched
+by the glob must share the same partition shape. Mixing flat
+(3-segment) and hive (6-segment) paths raises:
+
+```
+Binder Error: Hive partition mismatch between file ...
+```
+
+When the layout changed in `ticket:f4p9p2g3`, all 89 historical flat
+parquets were migrated in-place via `s3.copy_object` + `delete`
+(server-side; no data rewritten). The migration job inferred the
+correct year/month/day per file from the `load_id` epoch embedded
+in each filename.
+
+If a future layout change happens again, plan for a similar
+in-place migration. Cheap at this scale (KB-MB); becomes a
+one-shot job at GB+ scale.
+
+### Public view stays canonical
+
+`current_open_roles` does not expose `year` / `month` / `day` as
+columns. Partition pruning via the view is opaque to consumers —
+the partition columns are useful only for ad-hoc `read_parquet`
+queries that bypass the view. If a future Dive iteration wants
+date-partition access, add a sibling view or a parametrized
+table function.
+
+### What this enables
+
+- **Partition pruning** when querying R2 directly with a WHERE
+  on year/month/day.
+- **Industry-standard hive layout** that other tools
+  (Athena, Trino, Spark) recognize natively if the project ever
+  needs interop.
+- **Resume-credible "I built a hive-partitioned data lake on
+  Cloudflare R2"** as a project narrative.
+
+### What this defers
+
+- **Iceberg, DuckLake, Polaris catalog.** Managed table formats
+  add a metadata + transaction layer beyond what hive
+  partitioning provides. Cost: real complexity (catalog service,
+  versioning state, write coordination). Benefit: ACID, time
+  travel, schema evolution. Not worth it at v3 scale; revisit if
+  the project either outgrows plain Parquet's pain points or the
+  user wants explicit Iceberg-on-resume work.
 
 ## What columns the view exposes
 
@@ -578,3 +693,11 @@ page should link forward to them.
   deferral note inside page-monitor section. role_id strategies
   table grew from 6 to 13 rows (one per ATS slug); posted_at
   semantic table grew from 4 to 6 rows.
+- 2026-05-02 — extended after `plan:partition-r2-layout` PM2
+  retrospective. New "R2 layout: hive-partitioned" section
+  captures the dlt layout, read flag, type-awareness rules,
+  mixed-layout prohibition + in-place migration recipe, and the
+  explicit Iceberg / DuckLake / catalog deferral. "What lives
+  next to the data" glob updated from `raw/*/*/*.parquet` to
+  `raw/*/*/**/*.parquet`. dataset_name table grew to include
+  Rippling + Polymer rows.
