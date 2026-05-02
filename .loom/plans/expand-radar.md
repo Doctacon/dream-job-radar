@@ -176,10 +176,13 @@ Sequential, single ticket. Research-loopback-prone.
 
 Sequential, single ticket; per-company-deferable.
 
-- `ticket:<TBD>` — Extend `extractors/page.py` with two new
-  per-site parsers + `DEFAULT_SITES` entries. Critique
-  recommended. Posture: observation-first. If either site is
-  JS-rendered, defer that company without blocking the other.
+- `ticket:37epma6n` — Extend `extractors/page.py` with the
+  Wherobots WordPress parser. Vibrant Planet deferred (their
+  careers page shows the literal "No open roles at the moment"
+  placeholder; no role HTML to validate a parser against).
+  Status: `closed` (2026-05-02). 1 Wherobots role parsed today,
+  0 match keyword filter (honest 0-yield). VP picked up in a
+  future ticket once they post roles.
 
 # Risks
 

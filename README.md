@@ -19,6 +19,7 @@ Source kinds and ATS slugs covered today:
 | `sitemap`    | `gohunt`     | https://www.gohunt.com/sitemap.xml + per-URL JSON-LD scrape           |
 | `page`       | `regrid`     | https://jobs.gusto.com/boards/regrid-... (Gusto-hosted board)         |
 | `page`       | `felt`       | https://felt.com/careers (Webflow page; apply via mailto)             |
+| `page`       | `wherobots`  | https://wherobots.com/careers/ (WordPress; `<li class="job-item">`)   |
 | `rippling`   | `kalkomey`   | https://api.rippling.com/platform/api/ats/v1/board/kalkomey/jobs      |
 | `polymer`    | `upstream-tech` | https://www.upstream.tech/careers (index) → https://jobs.upstream.tech/{id} (per-role JSON-LD) |
 

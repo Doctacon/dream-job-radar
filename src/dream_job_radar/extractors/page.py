@@ -1,25 +1,35 @@
 """Page-monitor extractor.
 
 For sources that publish open roles directly on a careers / job-board
-HTML page with a stable structure but no API. Two parser strategies
-in v1:
+HTML page with a stable structure but no API. Parser strategies:
 
 - `gusto_board`: server-rendered Gusto job-board page
   (used by Regrid).
 - `felt_careers`: Felt's hand-maintained Webflow careers page.
+- `wherobots_careers`: Wherobots WordPress careers page with
+  `<li class="job-item">` blocks.
 
 The pattern generalizes by adding a new parser strategy plus a
 SiteSpec entry. Each new strategy must produce role dicts with at
 least `title`, `role_id`, and `url`.
+
+Vibrant Planet (`vibrantplanet.net/about/team-and-careers`) is
+intentionally absent from `DEFAULT_SITES`. Their careers page
+today shows the literal placeholder "No open roles at the moment.
+Check back soon!" — there is no role-list HTML to parse against.
+Add a `vibrant_planet_careers` parser only after they post roles
+and the populated HTML structure is observable.
 """
 
 from __future__ import annotations
 
 import hashlib
+import html
 import json
 import re
 from datetime import UTC, datetime
 from typing import Iterator, NamedTuple
+from urllib.parse import urlsplit
 
 import dlt
 import requests
@@ -37,6 +47,23 @@ GUSTO_UUID_TAIL_RE = re.compile(
     r"-([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})$"
 )
 FELT_ROW_RE = re.compile(r'<div class="h4 careers">([^<]+)</div>')
+WHEROBOTS_ITEM_RE = re.compile(
+    r'<li[^>]*class="[^"]*job-item[^"]*"[^>]*>'
+    r'(?P<block>.*?)'
+    r'</li>',
+    re.DOTALL,
+)
+WHEROBOTS_TITLE_RE = re.compile(
+    r'<div[^>]*class="[^"]*job-item__position[^"]*"[^>]*>(.+?)</div>',
+    re.DOTALL,
+)
+WHEROBOTS_APPLY_HREF_RE = re.compile(
+    r'<a[^>]*href="(https?://[^"]+)"[^>]*class="[^"]*job-item__apply[^"]*"',
+)
+WHEROBOTS_LOCATION_RE = re.compile(
+    r'<div[^>]*class="[^"]*job-item__location[^"]*"[^>]*>(.+?)</div>',
+    re.DOTALL,
+)
 
 
 class SiteSpec(NamedTuple):
@@ -58,6 +85,11 @@ DEFAULT_SITES: tuple[SiteSpec, ...] = (
         slug="felt",
         url="https://felt.com/careers",
         parser_kind="felt_careers",
+    ),
+    SiteSpec(
+        slug="wherobots",
+        url="https://wherobots.com/careers/",
+        parser_kind="wherobots_careers",
     ),
 )
 
@@ -109,11 +141,43 @@ def _parse_felt_careers(html: str, spec: SiteSpec) -> list[dict]:
     return out
 
 
-def _parse(spec: SiteSpec, html: str) -> list[dict]:
+def _parse_wherobots_careers(page_html: str, spec: SiteSpec) -> list[dict]:
+    out: list[dict] = []
+    for m in WHEROBOTS_ITEM_RE.finditer(page_html):
+        block = m.group("block")
+        title_m = WHEROBOTS_TITLE_RE.search(block)
+        href_m = WHEROBOTS_APPLY_HREF_RE.search(block)
+        if not title_m or not href_m:
+            continue
+        title = html.unescape(re.sub(r"<[^>]+>", "", title_m.group(1))).strip()
+        url = href_m.group(1).strip()
+        loc_m = WHEROBOTS_LOCATION_RE.search(block)
+        location = (
+            html.unescape(re.sub(r"<[^>]+>", "", loc_m.group(1))).strip()
+            if loc_m
+            else None
+        )
+        path = urlsplit(url).path.rstrip("/")
+        slug_segment = path.rsplit("/", 1)[-1] if path else ""
+        role_id = slug_segment or url
+        out.append(
+            {
+                "title": title,
+                "role_id": role_id,
+                "url": url,
+                "location": location,
+            }
+        )
+    return out
+
+
+def _parse(spec: SiteSpec, page_html: str) -> list[dict]:
     if spec.parser_kind == "gusto_board":
-        return _parse_gusto_board(html, spec)
+        return _parse_gusto_board(page_html, spec)
     if spec.parser_kind == "felt_careers":
-        return _parse_felt_careers(html, spec)
+        return _parse_felt_careers(page_html, spec)
+    if spec.parser_kind == "wherobots_careers":
+        return _parse_wherobots_careers(page_html, spec)
     raise ValueError(f"unknown parser_kind: {spec.parser_kind!r}")
 
 
