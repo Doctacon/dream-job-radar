@@ -1,9 +1,9 @@
 ---
 id: initiative:close-the-loop
 kind: initiative
-status: active
+status: closed
 created_at: 2026-04-29T14:17:56Z
-updated_at: 2026-04-29T14:17:56Z
+updated_at: 2026-05-02T12:56:43Z
 scope:
   kind: repository
   repositories:
@@ -169,3 +169,49 @@ v1 curated company list resolved (6 sources confirmed across Greenhouse,
 Ashby, page monitor, sitemap monitor; Spartan Forge dropped). v1
 title-keyword set defined. Ready to route into a plan that sequences
 M1–M5 for the 6 confirmed sources.
+
+## Close-out 2026-05-02
+
+Status → `closed`. Outcome by milestone:
+
+- **M1 — Pipeline lands data in R2:** done. dlt + boto3 against
+  Cloudflare R2 in the `pipelines` bucket. Four extractor kinds
+  shipped: greenhouse (onxmaps + planetlabs), ashby (Mapbox),
+  sitemap (gohunt), page (regrid + felt).
+- **M2 — MotherDuck queries R2 directly:** done.
+  `current_open_roles` view reads `r2://pipelines/raw/*/*/*.parquet`
+  via the MotherDuck-side R2 SECRET.
+- **M3 — Dive ships:** done. Saved at
+  `https://app.motherduck.com/dives/391d1329-70d7-4223-89c8-d0dfde66ef7f`.
+  Mobile-friendly iteration shipped 2026-05-02 (clickable title
+  links, location inline on phone, KPI grid responsive).
+- **M4 — Scheduled refresh:** partially done. GitHub Actions cron
+  `0 12 * * *` UTC live with per-source error isolation, idempotent
+  view-apply, and per-(source_kind, ats_slug) freshness health
+  check. Manual dispatch verified green. AC5 (first scheduled
+  firing observed cleanly) and AC6 (one-week observation window)
+  dropped from acceptance scope at close-out.
+- **M5 — Blog post live:** **not done.** Wave 4 was cancelled at
+  plan close-out. If/when a post is written, it lands under a
+  fresh initiative.
+- **M6 — Apply-loop tracking:** **not started.** Stays out of v1
+  scope as originally framed. Belongs to a future initiative if
+  pursued.
+
+Carried forward as deferred follow-ups (lived in critique records;
+not promoted to wiki or tickets at close-out, per user direction
+to free up bandwidth):
+
+- FIND-001 in `critique:actions-cron-iter1` — tighten
+  `STALE_THRESHOLD_HOURS = 36 → 26` after observation data exists.
+- FIND-002 in `critique:actions-cron-iter1` — wiki-promote the
+  freshness-vs-row-count rationale that drove the health-check
+  pivot.
+- FIND-007 in `critique:actions-cron-iter1` — per-step `env:` to
+  minimize secret exposure to third-party actions.
+- 2026-05-02 R2-rotation incident — useful operational lesson
+  (rotating R2 keys requires updating BOTH GH Actions secrets AND
+  the MotherDuck-side R2 SECRET); not promoted to wiki today.
+
+Total roles in `current_open_roles` at close-out: 104 (8 onxmaps +
+36 planetlabs + 59 Mapbox + 0 gohunt + 0 regrid + 1 felt).

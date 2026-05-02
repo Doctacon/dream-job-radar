@@ -1,9 +1,9 @@
 ---
 id: plan:v1-radar
 kind: plan
-status: active
+status: closed
 created_at: 2026-04-29T14:17:56Z
-updated_at: 2026-04-29T23:35:00Z
+updated_at: 2026-05-02T12:56:43Z
 scope:
   kind: repository
   repositories:
@@ -206,18 +206,18 @@ MotherDuck view unions all four prefixes correctly. Closes PM2.
 Sequential, single ticket.
 
 - `ticket:usz502u5` — GitHub Actions cron + per-source error
-  isolation + scripted view-apply + N→0 health check. One-week
-  observation period included as acceptance evidence. Closes PM3.
-  Status: `ready` (2026-04-30). Inherits FIND-001 + FIND-007
-  (page-monitor critique) and FIND-008 (walking-skeleton critique)
-  as explicit constraints.
+  isolation + scripted view-apply + N→0 health check. Status:
+  `closed` (2026-05-02). AC1–AC4 + AC7 satisfied; AC5 + AC6
+  dropped from acceptance scope to unblock initiative close-out
+  (the workflow continues to run on cron but is no longer a
+  ticket gate).
 
 ## Wave 4 — Blog post
 
-Sequential, single ticket.
-
-- `ticket:<TBD>` — Part-two post on `loughondata.com`, link or embed
-  the Dive. Closes PM4.
+Sequential, single ticket. **Cancelled** at plan close-out
+2026-05-02 — initiative close-the-loop is closing without a v1
+post. If/when a post is written, it lands under a fresh
+initiative.
 
 # Risks
 

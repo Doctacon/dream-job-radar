@@ -1,11 +1,11 @@
 ---
 id: ticket:usz502u5
 kind: ticket
-status: complete_pending_acceptance
+status: closed
 change_class: code-behavior
 risk_class: high
 created_at: 2026-04-30T03:06:26Z
-updated_at: 2026-04-30T03:40:14Z
+updated_at: 2026-05-02T12:56:43Z
 scope:
   kind: repository
   repositories:
@@ -303,10 +303,19 @@ Run URL:
 Cosmetic warnings (Node.js 20 deprecation notice, transient
 GitHub cache-service failure) noted but not load-bearing.
 
-AC5 — pending (waiting for first scheduled cron firing at
-12:00 UTC after merge).
+AC5 — closed by parent acceptance 2026-05-02. First scheduled
+cron firings (runs `25244430806`, `25244696172`) initially failed
+because the MotherDuck-side R2 SECRET held stale keys after a
+Cloudflare R2 token rotation. Fix landed: drop+recreate the
+MotherDuck `dream-job-radar` SECRET with the working keys (now in
+GH Actions secrets + local `.env`). Subsequent runs are expected
+to be green; parent accepts the AC without waiting for the next
+cron firing.
 
-AC6 — pending (one-week observation window; user-tracked).
+AC6 — closed by parent acceptance 2026-05-02. One-week
+observation window dropped from acceptance scope; the workflow
+will keep running but is no longer a gate for this ticket. If
+issues surface, they will be picked up in a follow-up initiative.
 
 AC7 — README updated: pointer to `apply_views.py`, pointer to
 `health_check.py`, "Scheduled refresh" section documenting the
@@ -357,12 +366,27 @@ post-closure retrospective.
 
 # Acceptance Decision
 
-Accepted by: pending
-Accepted at: pending
-Basis: pending — AC1–AC7 satisfied with observation-first evidence
-including the full one-week observation window. Critique findings
-either resolved or explicitly accepted.
-Residual risks: pending
+Accepted by: Connor
+Accepted at: 2026-05-02T12:56:43Z
+Basis: AC1–AC4 + AC7 satisfied with observation-first evidence
+(see Evidence section). AC5 (first scheduled cron firing) hit a
+real-world incident — the user rotated the Cloudflare R2 API
+token; GH Actions + `.env` were updated, but the MotherDuck
+server-side R2 SECRET was not. Two cron firings failed at
+`Apply MotherDuck views` until the SECRET was dropped and
+recreated. Parent accepts the AC after the SECRET fix; subsequent
+cron firings are expected green. AC6 (one-week observation
+window) explicitly dropped from acceptance scope to unblock the
+initiative close-out.
+Residual risks:
+- AC6 not gathered. If a future failure pattern emerges, will be
+  picked up in a follow-up initiative.
+- FIND-001 (tighten `STALE_THRESHOLD_HOURS` to 26) deferred.
+- FIND-002 (wiki-promote the freshness-vs-row-count rationale)
+  deferred.
+- FIND-007 (per-step `env:` for secret minimization) deferred.
+- The R2-rotation incident is a useful surfaceable lesson; not
+  promoted to wiki today (initiative is closing).
 
 # Dependencies
 
@@ -415,3 +439,17 @@ Soft references:
   conclusion `success`. AC4 satisfied. Status →
   `complete_pending_acceptance`. AC5 + AC6 still gated on time
   (first scheduled firing + one-week window).
+- 2026-05-02 — R2 token rotation incident. Cloudflare R2 API token
+  rotated (proactive); GH Actions secrets + local `.env` updated,
+  but MotherDuck server-side R2 SECRET held the stale credentials.
+  Cron runs `25244430806` and `25244696172` failed at
+  `Apply MotherDuck views` with
+  `_duckdb.HTTPException: HTTP Error: Permission error: Missing or
+  invalid credentials`. Fix: drop+recreate
+  `CREATE OR REPLACE SECRET dream-job-radar IN MOTHERDUCK (TYPE R2,
+  ...)` from the new keys. Local `apply_views.py` confirmed green
+  after fix.
+- 2026-05-02 — Parent closed `initiative:close-the-loop` and all
+  underlying records to free up bandwidth for new work. AC5 + AC6
+  dropped from acceptance scope; the workflow continues to run on
+  cron but is no longer a gate. Status → `closed`.
