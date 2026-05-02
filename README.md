@@ -19,6 +19,7 @@ Source kinds and ATS slugs covered today:
 | `sitemap`    | `gohunt`     | https://www.gohunt.com/sitemap.xml + per-URL JSON-LD scrape           |
 | `page`       | `regrid`     | https://jobs.gusto.com/boards/regrid-... (Gusto-hosted board)         |
 | `page`       | `felt`       | https://felt.com/careers (Webflow page; apply via mailto)             |
+| `rippling`   | `kalkomey`   | https://api.rippling.com/platform/api/ats/v1/board/kalkomey/jobs      |
 
 ## Run the pipeline
 
@@ -47,9 +48,13 @@ uv run python -m dream_job_radar.pipelines.sitemap
 # Page-monitor slice → s3://$R2_BUCKET/raw/page/<slug>/
 # Per-site HTML parsing for sources without an API.
 uv run python -m dream_job_radar.pipelines.page
+
+# Rippling slice → s3://$R2_BUCKET/raw/rippling/<slug>/
+# Public Rippling job-board API (flat JSON list).
+uv run python -m dream_job_radar.pipelines.rippling
 ```
 
-Run all sources sequentially (Greenhouse → Ashby → sitemap → page):
+Run all sources sequentially (Greenhouse → Ashby → sitemap → page → rippling):
 
 ```bash
 uv run python -m dream_job_radar.pipelines.radar

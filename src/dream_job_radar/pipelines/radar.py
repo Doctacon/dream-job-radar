@@ -26,6 +26,7 @@ from dotenv import load_dotenv
 from dream_job_radar.pipelines import ashby as ashby_pipeline
 from dream_job_radar.pipelines import greenhouse as greenhouse_pipeline
 from dream_job_radar.pipelines import page as page_pipeline
+from dream_job_radar.pipelines import rippling as rippling_pipeline
 from dream_job_radar.pipelines import sitemap as sitemap_pipeline
 
 
@@ -46,6 +47,10 @@ def run_all() -> None:
     print("[radar] running page pipeline")
     print("=" * 72)
     page_pipeline.run()
+    print("=" * 72)
+    print("[radar] running rippling pipeline")
+    print("=" * 72)
+    rippling_pipeline.run()
 
 
 def main() -> None:

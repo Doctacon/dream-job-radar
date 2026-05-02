@@ -53,6 +53,11 @@ jobs:
         continue-on-error: true
         run: uv run python -m dream_job_radar.pipelines.page
 
+      - name: Rippling pipeline
+        id: rippling
+        continue-on-error: true
+        run: uv run python -m dream_job_radar.pipelines.rippling
+
       - name: Apply MotherDuck views
         if: always()
         run: uv run python scripts/apply_views.py
