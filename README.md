@@ -20,6 +20,7 @@ Source kinds and ATS slugs covered today:
 | `page`       | `regrid`     | https://jobs.gusto.com/boards/regrid-... (Gusto-hosted board)         |
 | `page`       | `felt`       | https://felt.com/careers (Webflow page; apply via mailto)             |
 | `rippling`   | `kalkomey`   | https://api.rippling.com/platform/api/ats/v1/board/kalkomey/jobs      |
+| `polymer`    | `upstream-tech` | https://www.upstream.tech/careers (index) → https://jobs.upstream.tech/{id} (per-role JSON-LD) |
 
 ## Run the pipeline
 
@@ -52,9 +53,14 @@ uv run python -m dream_job_radar.pipelines.page
 # Rippling slice → s3://$R2_BUCKET/raw/rippling/<slug>/
 # Public Rippling job-board API (flat JSON list).
 uv run python -m dream_job_radar.pipelines.rippling
+
+# Polymer slice → s3://$R2_BUCKET/raw/polymer/<slug>/
+# Parent careers page enumerates role IDs; per-role JSON-LD on
+# jobs.<company>.<tld> subdomain.
+uv run python -m dream_job_radar.pipelines.polymer
 ```
 
-Run all sources sequentially (Greenhouse → Ashby → sitemap → page → rippling):
+Run all sources sequentially (Greenhouse → Ashby → sitemap → page → rippling → polymer):
 
 ```bash
 uv run python -m dream_job_radar.pipelines.radar
