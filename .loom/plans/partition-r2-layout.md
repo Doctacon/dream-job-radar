@@ -97,10 +97,12 @@ verification.
 
 Sequential, single ticket.
 
-- `ticket:<TBD>` — Edit `pipelines/_r2.py` layout, edit
+- `ticket:f4p9p2g3` — Edit `pipelines/_r2.py` layout, edit
   `motherduck/views.sql` glob + hive_partitioning, run + verify.
-  Same shape as `ticket:vejd8gon` (v2 Wave 1 trivial-config-add)
-  in scope and risk profile. Critique optional.
+  Status: `closed` (2026-05-02). Backfilled 89 historical flat
+  files into hive paths in-flight (DuckDB hive_partitioning is
+  strict: mixing flat + hive layouts errors out). Partition
+  pruning probe verified working. View counts unchanged.
 
 # Risks
 

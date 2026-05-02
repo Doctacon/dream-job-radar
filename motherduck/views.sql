@@ -33,9 +33,16 @@ WITH raw AS (
         TRY_CAST(posted_at AS TIMESTAMP WITH TIME ZONE) AS posted_at,
         fetched_at
     FROM read_parquet(
-        'r2://${R2_BUCKET}/raw/*/*/*.parquet',
+        -- Recursive ** glob spans both old flat layout
+        -- (raw/<source_kind>/<ats_slug>/<file>.parquet) and the
+        -- new hive-partitioned layout
+        -- (raw/<source_kind>/<ats_slug>/year=YYYY/month=MM/day=DD/<file>.parquet).
+        -- hive_partitioning=true exposes year/month/day as queryable
+        -- columns when present in the path (NULL for old flat files).
+        'r2://${R2_BUCKET}/raw/*/*/**/*.parquet',
         filename = true,
-        union_by_name = true
+        union_by_name = true,
+        hive_partitioning = true
     )
     WHERE filename NOT LIKE '%/_dlt_%'
       AND source_kind IS NOT NULL

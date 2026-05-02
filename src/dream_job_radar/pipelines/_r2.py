@@ -24,5 +24,10 @@ def r2_destination():
             "endpoint_url": endpoint,
             "region_name": "auto",
         },
-        layout="{table_name}/{load_id}.{file_id}.{ext}",
+        # Hive-partitioned layout per initiative:partition-r2-layout.
+        # dlt resolves YYYY/MM/DD from the load-package timestamp.
+        # DuckDB read_parquet with hive_partitioning=true exposes
+        # year (INT) / month (VARCHAR, zero-padded) / day (VARCHAR,
+        # zero-padded) as queryable columns for date-bound queries.
+        layout="{table_name}/year={YYYY}/month={MM}/day={DD}/{load_id}.{file_id}.{ext}",
     )
