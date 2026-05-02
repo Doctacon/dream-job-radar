@@ -22,18 +22,18 @@ export default function DreamJobRadar() {
       strftime(posted_at, '%Y-%m-%d') AS posted_at,
       url
     FROM ${TABLE}
-    ORDER BY posted_at DESC
+    ORDER BY posted_at DESC NULLS LAST
   `);
 
   const summaryRow = (Array.isArray(summary.data) ? summary.data : [])[0] ?? {};
   const roleRows = Array.isArray(roles.data) ? roles.data : [];
 
   return (
-    <div className="p-6" style={{ background: "#f8f8f8", margin: "0 auto" }}>
-      <h1 className="text-2xl font-semibold" style={{ color: "#231f20" }}>
+    <div className="p-4 sm:p-6" style={{ background: "#f8f8f8", margin: "0 auto" }}>
+      <h1 className="text-xl sm:text-2xl font-semibold" style={{ color: "#231f20" }}>
         dream-job-radar
       </h1>
-      <p className="text-sm mb-8" style={{ color: "#6a6a6a" }}>
+      <p className="text-xs sm:text-sm mb-6" style={{ color: "#6a6a6a" }}>
         Open roles across hand-picked companies, filtered to data, engineering,
         GIS and geospatial titles.
         {summaryRow.last_refresh ? (
@@ -45,52 +45,52 @@ export default function DreamJobRadar() {
         ) : null}
       </p>
 
-      <div className="grid grid-cols-4 gap-8 mb-10">
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 sm:gap-8 mb-8">
         <div>
           {summary.isLoading ? (
-            <div className="h-12 w-24 bg-gray-200 animate-pulse rounded" />
+            <div className="h-10 w-20 bg-gray-200 animate-pulse rounded" />
           ) : (
-            <p className="text-5xl font-bold" style={{ color: "#231f20" }}>
+            <p className="text-3xl sm:text-5xl font-bold" style={{ color: "#231f20" }}>
               {N(summaryRow.total_roles)}
             </p>
           )}
-          <p className="text-sm mt-2" style={{ color: "#6a6a6a" }}>
+          <p className="text-xs sm:text-sm mt-1" style={{ color: "#6a6a6a" }}>
             Open roles
           </p>
         </div>
         <div>
           {summary.isLoading ? (
-            <div className="h-12 w-24 bg-gray-200 animate-pulse rounded" />
+            <div className="h-10 w-20 bg-gray-200 animate-pulse rounded" />
           ) : (
-            <p className="text-5xl font-bold" style={{ color: "#231f20" }}>
+            <p className="text-3xl sm:text-5xl font-bold" style={{ color: "#231f20" }}>
               {N(summaryRow.companies)}
             </p>
           )}
-          <p className="text-sm mt-2" style={{ color: "#6a6a6a" }}>
+          <p className="text-xs sm:text-sm mt-1" style={{ color: "#6a6a6a" }}>
             Companies
           </p>
         </div>
         <div>
           {summary.isLoading ? (
-            <div className="h-12 w-24 bg-gray-200 animate-pulse rounded" />
+            <div className="h-10 w-20 bg-gray-200 animate-pulse rounded" />
           ) : (
-            <p className="text-5xl font-bold" style={{ color: "#231f20" }}>
+            <p className="text-3xl sm:text-5xl font-bold" style={{ color: "#231f20" }}>
               {N(summaryRow.locations)}
             </p>
           )}
-          <p className="text-sm mt-2" style={{ color: "#6a6a6a" }}>
+          <p className="text-xs sm:text-sm mt-1" style={{ color: "#6a6a6a" }}>
             Locations
           </p>
         </div>
         <div>
           {summary.isLoading ? (
-            <div className="h-12 w-24 bg-gray-200 animate-pulse rounded" />
+            <div className="h-10 w-20 bg-gray-200 animate-pulse rounded" />
           ) : (
-            <p className="text-5xl font-bold" style={{ color: "#231f20" }}>
+            <p className="text-3xl sm:text-5xl font-bold" style={{ color: "#231f20" }}>
               {N(roleRows.length)}
             </p>
           )}
-          <p className="text-sm mt-2" style={{ color: "#6a6a6a" }}>
+          <p className="text-xs sm:text-sm mt-1" style={{ color: "#6a6a6a" }}>
             Rows shown
           </p>
         </div>
@@ -110,48 +110,54 @@ export default function DreamJobRadar() {
         <table className="w-full text-sm" style={{ color: "#231f20" }}>
           <thead>
             <tr style={{ borderBottom: "1px solid #d8d8d8" }}>
-              <th className="text-left py-2 pr-4 font-medium" style={{ color: "#6a6a6a" }}>
+              <th className="text-left py-2 pr-3 font-medium" style={{ color: "#6a6a6a" }}>
                 Company
               </th>
-              <th className="text-left py-2 pr-4 font-medium" style={{ color: "#6a6a6a" }}>
+              <th className="text-left py-2 pr-3 font-medium" style={{ color: "#6a6a6a" }}>
                 Title
               </th>
-              <th className="text-left py-2 pr-4 font-medium" style={{ color: "#6a6a6a" }}>
+              <th className="text-left py-2 pr-3 font-medium hidden sm:table-cell" style={{ color: "#6a6a6a" }}>
                 Location
               </th>
-              <th className="text-left py-2 pr-4 font-medium" style={{ color: "#6a6a6a" }}>
-                Posted
-              </th>
               <th className="text-left py-2 font-medium" style={{ color: "#6a6a6a" }}>
-                URL
+                Posted
               </th>
             </tr>
           </thead>
           <tbody>
-            {roleRows.map((r, i) => (
-              <tr key={i} style={{ borderBottom: "1px solid #ececec" }}>
-                <td className="py-2 pr-4">{String(r.company ?? "")}</td>
-                <td className="py-2 pr-4">{String(r.title ?? "").trim()}</td>
-                <td className="py-2 pr-4" style={{ color: "#6a6a6a" }}>
-                  {String(r.location ?? "")}
-                </td>
-                <td className="py-2 pr-4" style={{ color: "#6a6a6a" }}>
-                  {String(r.posted_at ?? "")}
-                </td>
-                <td
-                  className="py-2 text-xs"
-                  style={{
-                    color: "#0777b3",
-                    maxWidth: 280,
-                    overflow: "hidden",
-                    textOverflow: "ellipsis",
-                    whiteSpace: "nowrap",
-                  }}
+            {roleRows.map((r, i) => {
+              const url = String(r.url ?? "");
+              const title = String(r.title ?? "").trim();
+              const titleEl = url ? (
+                <a
+                  href={url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  style={{ color: "#0777b3", textDecoration: "underline" }}
                 >
-                  {String(r.url ?? "")}
-                </td>
-              </tr>
-            ))}
+                  {title}
+                </a>
+              ) : (
+                <span>{title}</span>
+              );
+              return (
+                <tr key={i} style={{ borderBottom: "1px solid #ececec", verticalAlign: "top" }}>
+                  <td className="py-2 pr-3 whitespace-nowrap">{String(r.company ?? "")}</td>
+                  <td className="py-2 pr-3">
+                    {titleEl}
+                    <div className="text-xs mt-1 sm:hidden" style={{ color: "#6a6a6a" }}>
+                      {String(r.location ?? "")}
+                    </div>
+                  </td>
+                  <td className="py-2 pr-3 hidden sm:table-cell" style={{ color: "#6a6a6a" }}>
+                    {String(r.location ?? "")}
+                  </td>
+                  <td className="py-2 whitespace-nowrap" style={{ color: "#6a6a6a" }}>
+                    {String(r.posted_at ?? "")}
+                  </td>
+                </tr>
+              );
+            })}
           </tbody>
         </table>
       )}
