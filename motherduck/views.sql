@@ -48,6 +48,17 @@ WITH raw AS (
       AND source_kind IS NOT NULL
       AND ats_slug IS NOT NULL
       AND role_id IS NOT NULL
+      -- Bound the scan to the last 30 days of partitions
+      -- (initiative:bound-view-window). Hive partition columns
+      -- arrive as year=INT, month/day=zero-padded VARCHAR.
+      -- DuckDB's planner prunes parquet outside this window, so
+      -- the dedupe window function below operates on a bounded
+      -- input regardless of how many years of history live in R2.
+      -- 30 days is a generous superset of the cron's 36h
+      -- staleness check; the Dive layers a tighter 7-day filter
+      -- on top of the view output.
+      AND make_date(year, CAST(month AS INTEGER), CAST(day AS INTEGER))
+          >= current_date - INTERVAL 30 DAY
 )
 SELECT
     company,

@@ -4,7 +4,7 @@ kind: wiki
 page_type: concept
 status: active
 created_at: 2026-04-30T00:22:47Z
-updated_at: 2026-05-02T15:55:00Z
+updated_at: 2026-05-02T16:32:00Z
 scope:
   kind: repository
   repositories:
@@ -171,6 +171,55 @@ the partition columns are useful only for ad-hoc `read_parquet`
 queries that bypass the view. If a future Dive iteration wants
 date-partition access, add a sibling view or a parametrized
 table function.
+
+### How the view bounds scans
+
+Set 2026-05-02 (`initiative:bound-view-window`). The view's CTE
+filters parquet partitions on a 30-day window before the dedupe
+window function runs:
+
+```sql
+AND make_date(year, CAST(month AS INTEGER), CAST(day AS INTEGER))
+    >= current_date - INTERVAL 30 DAY
+```
+
+Net effect:
+
+- DuckDB pushes the predicate to the parquet read layer; only
+  partitions inside the 30-day window are scanned.
+- The dedupe `ROW_NUMBER() OVER (PARTITION BY source_kind,
+  ats_slug, role_id ORDER BY fetched_at DESC) = 1` operates on
+  the bounded set.
+- Scan size stays roughly constant as history accumulates.
+  Without the bound, a year of daily cron would feed 365 ×
+  per-day rows into the window function.
+
+The 30-day window is intentionally generous:
+
+- Cron health-check already fails fast on per-slug staleness
+  > 36 hours.
+- Manual one-off pipeline outages of a week or two are
+  recoverable without losing slugs from the view.
+- The Dive layers a tighter 7-day filter on top of the view
+  output, so the view's wider window is invisible to public
+  consumers.
+
+If cron stalls for a slug for > 30 days the view will silently
+forget that slug until cron resumes. That is an acceptable
+trade-off: a slug not observed in a month is operationally
+stale, and the health-check would have already alerted long
+before.
+
+The choice of `make_date(year, CAST(month AS INTEGER),
+CAST(day AS INTEGER))` is deliberate: `year` arrives as INT,
+`month` and `day` arrive as zero-padded VARCHAR (per
+`hive_partitioning=true` type inference). The cast makes the
+predicate partition-comparable so DuckDB's planner prunes
+correctly. If a future DuckDB version regresses partition
+pushdown for `make_date`, fall back to a lexicographic
+comparison against a string-formatted cutoff
+(`year || '-' || month || '-' || day >= '2026-04-02'`).
+Verify via `EXPLAIN` after any planner change.
 
 ### What this enables
 
@@ -701,3 +750,9 @@ page should link forward to them.
   next to the data" glob updated from `raw/*/*/*.parquet` to
   `raw/*/*/**/*.parquet`. dataset_name table grew to include
   Rippling + Polymer rows.
+- 2026-05-02 — extended after `plan:bound-view-window` PM2
+  retrospective. Added "How the view bounds scans" subsection:
+  view filters partitions to last 30 days at the CTE before
+  dedupe runs; bound stays constant as history accumulates;
+  fallback path documented for future planner-pushdown
+  regressions.
