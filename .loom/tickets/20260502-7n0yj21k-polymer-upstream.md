@@ -1,11 +1,11 @@
 ---
 id: ticket:7n0yj21k
 kind: ticket
-status: review_required
+status: closed
 change_class: code-behavior
 risk_class: medium
 created_at: 2026-05-02T13:52:22Z
-updated_at: 2026-05-02T14:00:00Z
+updated_at: 2026-05-02T14:05:00Z
 scope:
   kind: repository
   repositories:
@@ -350,12 +350,17 @@ pattern (parent-page enumeration vs sitemap.xml vs job-list-API).
 
 # Acceptance Decision
 
-Accepted by: pending
-Accepted at: pending
-Basis: pending — AC1–AC7 satisfied with observation-first
-evidence plus required critique findings either resolved or
-accepted.
-Residual risks: pending
+Accepted by: Connor
+Accepted at: 2026-05-02T14:05:00Z
+Basis: AC1–AC7 satisfied. Manual workflow dispatch on new shape
+green:
+`https://github.com/Doctacon/dream-job-radar/actions/runs/25253608609`
+— all 12 steps green (incl. new Polymer step). PM3 of
+`plan:expand-radar` closes with this ticket.
+Residual risks:
+- Polymer 0-yield today; pipeline catches future engineering
+  posts automatically.
+- Wiki updates (FIND-001/002/003/007) deferred to PM5 retro.
 
 # Dependencies
 
@@ -400,3 +405,8 @@ Soft references:
   follow-up required" — close after manual workflow dispatch
   succeeds on new shape. PM5 retro now load-bearing for
   Rippling + Polymer wiki updates.
+- 2026-05-02 — Manual `gh workflow run refresh.yml` on the new
+  shape completed end-to-end. Run URL
+  `https://github.com/Doctacon/dream-job-radar/actions/runs/25253608609`,
+  all 12 steps green (incl. new Polymer step). Status →
+  `closed`. PM3 of `plan:expand-radar` closes.

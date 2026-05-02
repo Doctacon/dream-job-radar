@@ -164,11 +164,13 @@ Sequential, single ticket.
 
 Sequential, single ticket. Research-loopback-prone.
 
-- `ticket:<TBD>` — Investigate role-list discovery (parent careers
-  page vs jobs subdomain vs Polymer-side feed). Build
-  `extractors/polymer.py` + `pipelines/polymer.py`, chain into
-  meta-runner, update wiki. Critique recommended. Defer the
-  company if no plain-HTML role index exists.
+- `ticket:7n0yj21k` — Build `extractors/polymer.py` (SiteSpec with
+  index regex + role URL template) + `pipelines/polymer.py`,
+  chain into meta-runner, extend workflow. Status: `closed`
+  (2026-05-02). Index discovery from parent careers page resolved
+  3 role IDs; 0 match keyword filter today. Manual workflow
+  dispatch green (run 25253608609). Wiki updates deferred to PM5
+  retro.
 
 ## Wave 4 — Page-monitor adds (Vibrant Planet + Wherobots)
 
