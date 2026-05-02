@@ -18,7 +18,7 @@ import requests
 ASHBY_API = "https://api.ashbyhq.com/posting-api/job-board/{slug}"
 USER_AGENT = "dream-job-radar/0.1"
 TITLE_KEYWORDS = ("data", "engineer", "gis", "geospatial")
-DEFAULT_BOARDS = ("Mapbox",)
+DEFAULT_BOARDS = ("Mapbox", "pano-ai")
 
 
 def _title_matches(title: str) -> bool:

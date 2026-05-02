@@ -142,10 +142,11 @@ in v1).
 
 Sequential, single ticket.
 
-- `ticket:<TBD>` — Extend `DEFAULT_BOARDS` for Greenhouse
+- `ticket:vejd8gon` — Extend `DEFAULT_BOARDS` for Greenhouse
   (Floodbase, BlastPoint, Overstory) and Ashby (Pano AI).
-  Verify counts in `current_open_roles`. Same shape as
-  `ticket:tiv8bsu7` (v1 Wave 2 #1).
+  Status: `closed` (2026-05-02). Adds 13 new view rows
+  (blastpoint=2, overstory=7, pano-ai=4; floodbase=0 honest).
+  Total view rows now 120.
 
 ## Wave 2 — Rippling extractor (Kalkomey)
 
