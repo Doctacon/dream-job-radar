@@ -3,7 +3,7 @@ id: constitution:main
 kind: constitution
 status: active
 created_at: 2026-04-29T14:17:56Z
-updated_at: 2026-04-29T14:17:56Z
+updated_at: 2026-05-02T13:10:00Z
 scope:
   kind: workspace
 links: {}
@@ -84,6 +84,10 @@ In practice that allows:
 - Greenhouse public job-board API
 - Lever public job-board API
 - Ashby public job-board API (`api.ashbyhq.com/posting-api/job-board/<slug>`)
+- Rippling public job-board API
+  (`api.rippling.com/platform/api/ats/v1/board/<slug>/jobs`)
+- per-role JSON-LD on a public careers portal (e.g. Polymer-hosted
+  `jobs.<company>.tech` boards exposing `JobPosting` schema per role)
 - a public careers HTML page that can be scraped politely (page monitor)
 - a public sitemap that exposes role-shaped URLs (sitemap monitor)
 
@@ -180,3 +184,10 @@ tracks application status. Out of scope until Phase 1 ships.
   eliminate egress cost on MotherDuck reads and reduce blast radius from
   the absent hard spend-cap. Codified in
   `decision:0001-storage-backend-r2` and `research:storage-backend`.
+- 2026-05-02 — `initiative:close-the-loop` closed; v1 ships running cron +
+  Dive across 6 companies (104 roles). M5 (blog post) cancelled at
+  close-out; M6 (apply-loop tracking) deferred to a future initiative.
+- 2026-05-02 — added Rippling job-board API and per-role JSON-LD portals
+  (Polymer-style) to the allowed source list after `research:ats-discovery-v2`
+  identified Kalkomey on Rippling and Upstream Tech on Polymer for
+  `initiative:expand-radar`.
