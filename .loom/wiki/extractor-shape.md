@@ -4,7 +4,7 @@ kind: wiki
 page_type: concept
 status: active
 created_at: 2026-04-30T00:22:47Z
-updated_at: 2026-04-30T03:10:00Z
+updated_at: 2026-05-02T14:30:00Z
 scope:
   kind: repository
   repositories:
@@ -167,19 +167,42 @@ Sources often expose unlisted drafts in the same response shape as
 public listings. Before applying the title-keyword filter, check for
 the source-specific "is this actually live?" flag and skip drafts.
 
-Examples:
+Per-source-kind posture:
 
-- Ashby: `if not job.get("isListed", True): continue`
-- Greenhouse: no equivalent flag in the public `/jobs` endpoint;
-  the API only returns published roles, so no extra check needed.
-- Sitemap-monitor sources (e.g. GoHunt): no flag exists. Sitemap
-  presence IS the publishedness signal; if a URL appears in
-  `sitemap.xml`, the role is considered live. The check is omitted
-  intentionally, not forgotten.
-- Future source kinds: check the upstream docs for a
-  `published`, `isLive`, `status == "open"`, or similar flag and
-  apply it defensively even if today's data does not appear to need
-  it.
+| source_kind | posture                                                                  |
+|-------------|--------------------------------------------------------------------------|
+| greenhouse  | API-implicit — `/jobs` only returns published roles; no extra check     |
+| ashby       | flag-based — `if not job.get("isListed", True): continue`               |
+| sitemap     | presence-based — sitemap `<loc>` is the published signal                |
+| page        | presence-based — being on the careers page IS the signal                |
+| rippling    | presence-based — list response excludes unpublished by upstream contract|
+| polymer     | presence-based — index URL on parent careers page IS the signal         |
+
+Three distinct postures across six source kinds. The rule for new
+source kinds:
+
+1. Check the upstream docs for a `published` / `isLive` /
+   `status == "open"` flag.
+2. If present, gate before the keyword filter (Ashby pattern).
+3. If absent, accept presence-as-signal and document the choice
+   in this table.
+
+## Polite-fetch UA boundary
+
+Default User-Agent is `dream-job-radar/0.1`. Polymer's extractor
+includes a polite→browser UA fallback: if the polite UA returns
+403 or 503, retry once with a real browser UA. This is the v1
+ceiling on UA tactics. Anything beyond that — cookies, JS
+execution, headless browsers, login flows — requires a research
+loopback and explicit constitutional discussion (per
+`constitution:main` "no anti-bot evasion" posture).
+
+In v1 + v2, the fallback is exercised by neither Polymer
+(Upstream Tech) nor any other source — all surfaces returned 200
+to the polite UA. The fallback exists pre-emptively for sites
+that Cloudflare-front their careers pages; if a future site
+becomes unreachable even with browser UA, that company is
+dropped, not escalated to harder evasion.
 
 ## Duplicates by title are upstream behavior
 
@@ -308,19 +331,135 @@ rows therefore share the same `url`. If a future Dive iteration
 wants to surface a structured apply-action, capture mailto in a
 new column then; do not extend the canonical row pre-emptively.
 
+### Vibrant Planet deferral
+
+`vibrantplanet.net/about/team-and-careers` returns 200 but their
+careers section currently shows the literal placeholder `"No open
+roles at the moment. Check back soon!"`. There is no role-list
+HTML to validate a parser against. Vibrant Planet is intentionally
+absent from `extractors/page.py` `DEFAULT_SITES` until they post
+roles. A `vibrant_planet_careers` parser can be added once the
+populated HTML structure is observable. The module docstring
+documents this so future agents do not blindly add a guess parser.
+
+## Rippling sources (public board API)
+
+Rippling is a flat JSON-list public API:
+
+`GET https://api.rippling.com/platform/api/ats/v1/board/<slug>/jobs`
+→ HTTP 200, list of records with shape:
+
+```json
+{
+  "uuid": "86cb9df0-2d01-4994-8e75-06e21ce17534",
+  "name": "Content Editor (Contractor)",
+  "department": {"id": "Marketing", "label": "Marketing"},
+  "url": "https://ats.rippling.com/<slug>/jobs/<uuid>",
+  "workLocation": {"label": "Remote (United States)", "id": "..."}
+}
+```
+
+The pattern:
+
+1. Fetch list endpoint.
+2. For each record, apply title-keyword filter on `name`.
+3. Yield matched roles via `_normalize`.
+
+### `role_id` derivation
+
+`role_id = str(job["uuid"])`. Server-generated, opaque, does not
+change with title rewrites. Same identity quality as Greenhouse
+integer ids and Ashby UUIDs.
+
+### `workLocation` and `department` flattening
+
+Both fields are dicts with `id` + `label`. The canonical row
+exposes only `location = workLocation.label` (string).
+`department` lives only in `raw_json` per the no-list / no-nested-
+struct rule (FIND-001 of Ashby/Mapbox critique).
+
+### `posted_at` is empty
+
+Rippling's list endpoint exposes no posting timestamp. The
+extractor sets `posted_at = ""`; the view's TRY_CAST converts to
+NULL. Use `first_seen_at` for recency.
+
+## Polymer sources (parent-page index + per-role JSON-LD)
+
+Polymer is a hybrid pattern: index from a parent careers URL
+(e.g. `upstream.tech/careers`), role data from per-role pages on a
+custom `jobs.<company>.<tld>` subdomain.
+
+The pattern:
+
+1. Fetch the parent careers page.
+2. Apply a per-site regex (`SiteSpec.id_pattern`) to extract role
+   IDs.
+3. For each ID, GET `SiteSpec.role_url_template.format(id=id)`.
+4. Extract the first `<script type="application/ld+json">` block
+   whose `@type == "JobPosting"`.
+5. Parse `title`, `datePosted`, `url`, `jobLocation` (defensive
+   for list-typed multi-location postings).
+6. Apply title-keyword filter, yield matched roles.
+
+### SiteSpec parameterization
+
+Each Polymer-hosted company is a `SiteSpec` with `slug`,
+`index_url`, `id_pattern` (regex), `role_url_template`. Adding a
+new Polymer site = one tuple entry plus verification that the
+regex extracts IDs and the role pages carry JSON-LD JobPosting.
+
+### `role_id` derivation
+
+`role_id` = the numeric upstream ID extracted from the index page.
+Server-generated; persists across title rewrites. Same identity
+quality as Rippling UUIDs.
+
+### `datePosted` reformatting
+
+Polymer's `datePosted` is non-ISO: `'YYYY-MM-DD HH:MM:SS UTC'`.
+The extractor reformats to ISO via `datetime.strptime` +
+`isoformat()` before storage so the view's TRY_CAST handles it
+cleanly. Unparseable values → `""` → NULL via TRY_CAST.
+
+### Index regex fragility
+
+Same risk class as page-monitor parsers. A parent careers page
+re-skin can move role-ID links into JS-rendered content,
+silently producing 0 IDs. The
+`[polymer:<slug>] index discovered N role(s)` log line is the
+operator-visibility signal; Wave 3 cron has no automated alert
+for N→0 transitions on index discovery (only on parquet
+freshness).
+
+### Index discovery is parent-page only
+
+`jobs.<company>.<tld>` does NOT typically expose a sitemap or
+JSON list endpoint (verified for Upstream Tech: `/sitemap.xml`,
+`/jobs.json`, `/api/jobs` all 404 / 500). Always derive role IDs
+from the parent careers page; do not try to enumerate role IDs
+by guessing.
+
 ## role_id strategies across source kinds
 
 Different source kinds use different identity strategies. Each is
 correct for its source.
 
-| source_kind | site         | role_id derivation                                | rename-stable? |
-|-------------|--------------|---------------------------------------------------|----------------|
-| greenhouse  | onxmaps      | `str(job["id"])` — Greenhouse integer            | yes            |
-| greenhouse  | planetlabs   | `str(job["id"])` — Greenhouse integer            | yes            |
-| ashby       | Mapbox       | `str(job["id"])` — Ashby UUID                    | yes            |
-| sitemap     | gohunt       | last URL path segment                            | NO — slug rename creates new role |
-| page        | regrid       | trailing UUID of Gusto posting slug              | yes            |
-| page        | felt         | sha1(`slug + ":" + title`)[:16]                  | NO — title rename creates new role |
+| source_kind | site             | role_id derivation                                       | rename-stable? |
+|-------------|------------------|----------------------------------------------------------|----------------|
+| greenhouse  | onxmaps          | `str(job["id"])` — Greenhouse integer                   | yes            |
+| greenhouse  | planetlabs       | `str(job["id"])` — Greenhouse integer                   | yes            |
+| greenhouse  | floodbase        | `str(job["id"])` — Greenhouse integer                   | yes            |
+| greenhouse  | blastpoint       | `str(job["id"])` — Greenhouse integer                   | yes            |
+| greenhouse  | overstory        | `str(job["id"])` — Greenhouse integer                   | yes            |
+| ashby       | Mapbox           | `str(job["id"])` — Ashby UUID                           | yes            |
+| ashby       | pano-ai          | `str(job["id"])` — Ashby UUID                           | yes            |
+| sitemap     | gohunt           | last URL path segment                                   | NO — slug rename creates new role |
+| page        | regrid           | trailing UUID of Gusto posting slug                     | yes            |
+| page        | felt             | sha1(`slug + ":" + title`)[:16]                         | NO — title rename creates new role |
+| page        | wherobots        | trailing path segment of apply URL (URL slug)           | NO — slug rename creates new role |
+| rippling    | kalkomey         | `str(job["uuid"])` — Rippling UUID                      | yes            |
+| polymer     | upstream-tech    | numeric upstream ID from index page                     | yes            |
 
 Rule for new source kinds: **if the upstream provides a stable
 machine-id, use it; otherwise hash a stable content-derived key
@@ -331,16 +470,24 @@ choice when adding a new site.
 
 `posted_at` carries different upstream semantics by source kind:
 
-| source_kind | site         | upstream field                                |
-|-------------|--------------|-----------------------------------------------|
-| greenhouse  | (all)        | `updated_at` ("last modified at source")     |
-| ashby       | (all)        | `publishedAt` (true publication timestamp)   |
-| sitemap     | gohunt       | JSON-LD `datePublished` (fallback `dateModified`) |
-| page        | regrid+felt  | `""` (no upstream signal exists)             |
+| source_kind | site                       | upstream field                                |
+|-------------|----------------------------|-----------------------------------------------|
+| greenhouse  | (all)                      | `updated_at` ("last modified at source")     |
+| ashby       | (all)                      | `publishedAt` (true publication timestamp)   |
+| sitemap     | gohunt                     | JSON-LD `datePublished` (fallback `dateModified`) |
+| page        | regrid + felt + wherobots  | `""` (no upstream signal exists)             |
+| rippling    | kalkomey                   | `""` (Rippling list endpoint exposes none)   |
+| polymer     | upstream-tech              | JSON-LD `datePosted` reformatted to ISO inside the extractor (Polymer ships `'YYYY-MM-DD HH:MM:SS UTC'`, not ISO) |
 
 Consumers that want a unified "recency" signal should use the
 view-derived `first_seen_at` instead — it is the same shape across
 every source kind: when the pipeline first observed the role.
+
+The view's `TRY_CAST(posted_at AS TIMESTAMP)` (added 2026-05-01)
+turns empty / unparseable strings into NULL. Extractors that emit
+non-ISO formats (Polymer's case) **must** reformat to ISO before
+storage so downstream consumers and the view dedup-window order
+correctly.
 
 If the upstream-semantic divergence becomes meaningful, split the
 column into `posted_at` (true creation when known) and
@@ -423,3 +570,11 @@ page should link forward to them.
   note); role_id strategies comparison table across all 4 source
   kinds; `posted_at` semantic table replacing the
   Greenhouse-only paragraph.
+- 2026-05-02 — extended after `plan:expand-radar` PM5
+  retrospective. Added Rippling and Polymer sections (each with
+  pattern overview + role_id, posted_at, and identity-fragility
+  notes); polite-fetch UA boundary section; defensive
+  listed/published per-source-kind table; Vibrant Planet
+  deferral note inside page-monitor section. role_id strategies
+  table grew from 6 to 13 rows (one per ATS slug); posted_at
+  semantic table grew from 4 to 6 rows.

@@ -1,9 +1,9 @@
 ---
 id: plan:expand-radar
 kind: plan
-status: active
+status: closed
 created_at: 2026-05-02T13:13:30Z
-updated_at: 2026-05-02T13:13:30Z
+updated_at: 2026-05-02T14:30:00Z
 scope:
   kind: repository
   repositories:

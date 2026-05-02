@@ -1,9 +1,9 @@
 ---
 id: initiative:expand-radar
 kind: initiative
-status: active
+status: closed
 created_at: 2026-05-02T13:13:30Z
-updated_at: 2026-05-02T13:13:30Z
+updated_at: 2026-05-02T14:30:00Z
 scope:
   kind: repository
   repositories:
@@ -190,3 +190,66 @@ Initiative drafted 2026-05-02 immediately after
 4 out) per `research:ats-discovery-v2`. Two new source kinds
 admitted constitutionally. Ready to route into a plan that
 sequences M1–M5 across roughly four waves.
+
+## Close-out 2026-05-02
+
+Status → `closed`. Outcome by milestone:
+
+- **M1 — Trivial config-only adds:** done.
+  `ticket:vejd8gon` (closed). Floodbase, BlastPoint, Overstory
+  added to greenhouse; Pano AI added to ashby. Today's view
+  growth: blastpoint=2, overstory=7, pano-ai=4 matched roles;
+  floodbase=0 (honest — current openings are GTM/Marketing).
+- **M2 — Rippling extractor:** done.
+  `ticket:vr6iel5o` (closed). Kalkomey 6 roles fetched, 0 match
+  the v1 keyword filter today (content/ops/security/design/PR).
+  Honest 0-yield. Cron run 25253284648 green.
+- **M3 — Polymer extractor:** done.
+  `ticket:7n0yj21k` (closed). Upstream Tech 3 roles parsed via
+  parent-page index + per-role JSON-LD; 0 match today
+  (Open Call + 2 Account Executive postings). Honest 0-yield.
+  Cron run 25253608609 green.
+- **M4 — Page-monitor adds:** partially done.
+  `ticket:37epma6n` (closed). Wherobots parser shipped; 1 role
+  parsed today (Senior Account Executive – Enterprise East),
+  0 match. Vibrant Planet **deferred** — their careers page
+  shows the literal "No open roles at the moment" placeholder;
+  no role-list HTML to parse. VP becomes a future ticket
+  whenever they post roles.
+- **M5 — Retrospective + closeout:** done. `wiki:extractor-shape`
+  extended with Rippling + Polymer sections, polite-fetch UA
+  boundary section, defensive listed/published per-source-kind
+  table, Vibrant Planet deferral note. role_id strategies +
+  posted_at semantic tables expanded.
+
+State at close-out:
+
+- 6 source kinds running on cron: greenhouse, ashby, sitemap,
+  page, rippling, polymer.
+- 11 ATS slugs total. 7 producing rows in
+  `current_open_roles`. 4 honest 0-yield (floodbase, gohunt,
+  regrid, kalkomey, upstream-tech, plus wherobots — actually 6
+  honest 0-yield slugs).
+- Total view rows: 120.
+
+Carried-forward as deferred follow-ups (lived in critique
+records; not promoted today):
+
+- FIND-001 in `critique:actions-cron-iter1` — tighten
+  `STALE_THRESHOLD_HOURS = 36 → 26` after observation data
+  stabilizes.
+- FIND-007 in `critique:actions-cron-iter1` — per-step `env:`
+  for secret minimization (8 cron steps now share job-level
+  secrets).
+- FIND-001 of `critique:page-monitor-iter1` /
+  FIND-002 of `critique:polymer-upstream-iter1` — N→0 silent
+  breakage detection for HTML / index-regex parsers (page +
+  polymer source kinds). Workflow visibility today is the
+  MATCH/skip log lines only.
+- Vibrant Planet — ship a `vibrant_planet_careers` parser when
+  they post roles.
+- AllTrails / Pachama / CalTopo / BaseMap — dropped permanently
+  per `research:ats-discovery-v2` null results.
+
+If a future initiative tightens these, it inherits a stable
+6-source-kind, 11-slug pipeline as its baseline.
