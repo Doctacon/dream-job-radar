@@ -1,11 +1,11 @@
 ---
 id: ticket:vr6iel5o
 kind: ticket
-status: review_required
+status: closed
 change_class: code-behavior
 risk_class: medium
 created_at: 2026-05-02T13:32:31Z
-updated_at: 2026-05-02T15:45:00Z
+updated_at: 2026-05-02T13:46:00Z
 scope:
   kind: repository
   repositories:
@@ -320,11 +320,21 @@ the role_id strategies table and a fifth source-kind to the
 
 # Acceptance Decision
 
-Accepted by: pending
-Accepted at: pending
-Basis: pending — AC1–AC7 satisfied with observation-first evidence
-plus required critique findings either resolved or accepted.
-Residual risks: pending
+Accepted by: Connor
+Accepted at: 2026-05-02T13:46:00Z
+Basis: AC1–AC7 satisfied with observation-first evidence (see
+Evidence section). Critique findings deferred to PM5
+retrospective per critique recommendation. Manual workflow
+dispatch on the new shape succeeded:
+`https://github.com/Doctacon/dream-job-radar/actions/runs/25253284648`
+— all 11 job steps green (incl. new Rippling step + Apply Views +
+Health Check). PM2 of `plan:expand-radar` closes with this
+ticket.
+Residual risks:
+- Kalkomey 0-yield today; pipeline catches future engineering
+  posts automatically. Same posture as floodbase + gohunt + regrid.
+- Wiki updates (FIND-001 / FIND-002 / FIND-003) deferred to PM5
+  retro per critique recommendation.
 
 # Dependencies
 
@@ -366,3 +376,8 @@ Soft references:
   follow-up required" — close after manual workflow dispatch
   succeeds on the new shape. Wiki updates deferred to PM5
   retrospective.
+- 2026-05-02 — Manual `gh workflow run refresh.yml` on the new
+  shape completed end-to-end. Run URL
+  `https://github.com/Doctacon/dream-job-radar/actions/runs/25253284648`,
+  all 11 steps green (incl. new Rippling step). Status →
+  `closed`. PM2 of `plan:expand-radar` closes.

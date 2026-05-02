@@ -152,10 +152,13 @@ Sequential, single ticket.
 
 Sequential, single ticket.
 
-- `ticket:<TBD>` — Build `extractors/rippling.py` +
-  `pipelines/rippling.py`, chain into meta-runner, update wiki.
-  Critique recommended (code-quality + schema-fitness). Posture:
-  observation-first.
+- `ticket:vr6iel5o` — Build `extractors/rippling.py` +
+  `pipelines/rippling.py`, chain into meta-runner, extend
+  workflow. Status: `closed` (2026-05-02). Kalkomey 6 roles, 0
+  match the v1 keyword filter today (honest 0-yield). Manual
+  workflow dispatch on new shape green
+  (run 25253284648). Wiki updates for FIND-001/002/003 deferred
+  to PM5 retro.
 
 ## Wave 3 — Polymer extractor (Upstream Tech)
 
