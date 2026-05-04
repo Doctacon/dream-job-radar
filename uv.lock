@@ -318,13 +318,9 @@ dependencies = [
     { name = "dlt", extra = ["filesystem"] },
     { name = "duckdb" },
     { name = "pyarrow" },
+    { name = "pyiceberg", extra = ["pyarrow", "s3fs"] },
     { name = "python-dotenv" },
     { name = "requests" },
-]
-
-[package.dev-dependencies]
-dev = [
-    { name = "pyiceberg", extra = ["pyarrow", "s3fs"] },
 ]
 
 [package.metadata]
@@ -333,12 +329,13 @@ requires-dist = [
     { name = "dlt", extras = ["filesystem"], specifier = ">=1.26.0" },
     { name = "duckdb", specifier = ">=1.5.2" },
     { name = "pyarrow", specifier = ">=24.0.0" },
+    { name = "pyiceberg", extras = ["pyarrow", "s3fs"], specifier = ">=0.11.1" },
     { name = "python-dotenv", specifier = ">=1.2.2" },
     { name = "requests", specifier = ">=2.33.1" },
 ]
 
 [package.metadata.requires-dev]
-dev = [{ name = "pyiceberg", extras = ["pyarrow", "s3fs"], specifier = ">=0.11.1" }]
+dev = []
 
 [[package]]
 name = "duckdb"

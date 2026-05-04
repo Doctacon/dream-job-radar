@@ -1,11 +1,11 @@
 ---
 id: ticket:9gbi98mx
 kind: ticket
-status: ready
+status: closed
 change_class: code-behavior
 risk_class: low
 created_at: 2026-05-04T03:22:28Z
-updated_at: 2026-05-04T03:22:28Z
+updated_at: 2026-05-04T03:35:00Z
 scope:
   kind: repository
   repositories:
@@ -128,4 +128,35 @@ return what we expect". Evidence shape:
 # Status Summary
 
 Drafted 2026-05-04 immediately after `ticket:mka30wgd`
-(Phase 0 spike) closed. Ready.
+(Phase 0 spike) closed. Executed same session.
+
+## Outcome 2026-05-04: closed
+
+All ACs met:
+
+- AC1: `src/dream_job_radar/pipelines/_iceberg.py` created.
+  Smoke `iceberg_catalog().list_namespaces()` returns
+  `[('spike',)]` pre-mart, `[('mart',), ('spike',)]` post-mart.
+  Evidence: `p1_1_smoke_factory.log`, `p1_1_create_mart.log`.
+- AC2: `mart` namespace created in R2 Data Catalog. Idempotent
+  on re-run.
+- AC3: `motherduck/bootstrap_iceberg.sql` + matching
+  `scripts/bootstrap_motherduck_iceberg.py` exist. Idempotent
+  via `CREATE OR REPLACE PERSISTENT SECRET`. Confirmed by
+  running twice.
+- AC4: `r2_pipelines_s3` persistent secret visible:
+  `[('r2_pipelines_s3', 's3', ['s3://pipelines'], True)]`.
+  Evidence: `p1_1_bootstrap_run.log`.
+- AC5: `.env.example` adds `R2_TOKEN_VALUE` with comment
+  pointing at Admin Read & Write scope.
+- AC6: no changes to `pipelines/_r2.py`, `motherduck/views.sql`,
+  `.github/workflows/`, or radar source pipelines. Verified
+  via `git status --short`.
+
+Side effect not in original ACs but warranted: pyiceberg moved
+from dev to main dependency since `_iceberg.py` is imported
+from `src/` and will be runtime-required at P1.3 (cron). Lock
+file refreshed.
+
+Next: P1.2 (writer pipeline `iceberg_mart.py`). Will be opened
+as a fresh ticket when ready to start.

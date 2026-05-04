@@ -7,6 +7,7 @@ dependencies = [
     "dlt[filesystem]>=1.26.0",
     "duckdb>=1.5.2",
     "pyarrow>=24.0.0",
+    "pyiceberg[pyarrow,s3fs]>=0.11.1",
     "python-dotenv>=1.2.2",
     "requests>=2.33.1",
 ]
@@ -19,6 +20,4 @@ build-backend = "hatchling.build"
 packages = ["src/dream_job_radar"]
 
 [dependency-groups]
-dev = [
-    "pyiceberg[pyarrow,s3fs]>=0.11.1",
-]
+dev = []
