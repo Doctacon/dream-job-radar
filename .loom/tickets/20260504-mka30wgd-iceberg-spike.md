@@ -1,11 +1,11 @@
 ---
 id: ticket:mka30wgd
 kind: ticket
-status: complete_pending_acceptance
+status: closed
 change_class: research-spike
 risk_class: low
 created_at: 2026-05-04T02:49:06Z
-updated_at: 2026-05-04T03:05:00Z
+updated_at: 2026-05-04T03:22:28Z
 scope:
   kind: repository
   repositories:
@@ -143,9 +143,14 @@ Acceptance review:
   pyiceberg-core 0.8.0, MotherDuck server v1.5.2) — done.
 - AC6: live ingest untouched — done.
 
-All ACs met. Decision per halt-gate is partial → halt Phase 1
-pending explicit user re-scope. No auto-pivot to Lakekeeper /
-Polaris / S3 / engine swap.
+All ACs met. Decision per halt-gate was partial → halt
+honored.
 
-Ticket parks at `complete_pending_acceptance` until user closes
-or reroutes via initiative update.
+## Acceptance 2026-05-04
+
+Follow-up diagnostic same session ruled out auth as cause
+(persistent MotherDuck S3 secret did not fix SIGSEGV) and
+proved the degraded reader workflow (PyIceberg metadata
+pointer → MotherDuck `iceberg_scan` → optional `CREATE OR
+REPLACE TABLE` materialization). User accepted shape A' and
+reopened initiative. Ticket → `closed`.

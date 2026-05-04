@@ -1,9 +1,9 @@
 ---
 id: plan:lakehouse-iceberg
 kind: plan
-status: blocked
+status: active
 created_at: 2026-05-04T02:49:06Z
-updated_at: 2026-05-04T03:05:00Z
+updated_at: 2026-05-04T03:22:28Z
 scope:
   kind: repository
   repositories:
@@ -42,23 +42,52 @@ not silently route to Phase 1. The initiative goes back through
 outer-loop framing (constitution / research / new initiative)
 before any further implementation work.
 
-## Phase 1 — One mart table (only if Phase 0 green)
+## Phase 1 — One mart table, shape A'
 
-Sub-steps (each its own ticket when Phase 1 opens; not pre-
-populated to avoid stale tickets):
+Reader path is degraded per Phase 0 follow-up: MotherDuck
+catalog ATTACH `SELECT` SIGSEGVs on R2 Iceberg, but
+`iceberg_scan(<metadata_location>)` works. Phase 1 carries the
+materialization step explicitly: writer resolves the fresh
+metadata pointer via PyIceberg, then `CREATE OR REPLACE TABLE`
+in MotherDuck against `iceberg_scan(<ptr>)`. Dive panels read
+the native MotherDuck table.
 
-- Pick the mart table shape (likely
-  `mart_job_postings_daily_snapshot`: append-only daily
-  snapshot of `current_open_roles` rows).
-- Build the writer (PyIceberg-driven Python script under
-  `pipelines/`, or a dlt iceberg destination pipeline,
-  decided after Phase 0 informs ergonomics).
-- Wire the writer into the existing GitHub Actions cron
-  (separate workflow or extra step, decided in the ticket).
-- Land MotherDuck reader path: ATTACH catalog, expose the table
-  via a view or directly to a Dive panel.
-- Smoke test: row counts, catalog metadata visible, repeated
-  runs append correctly.
+Mart table:
+
+- Name: `mart.job_postings_daily_snapshot`
+- Shape: all columns from `current_open_roles` plus
+  `snapshot_date DATE`
+- Append-only, unpartitioned (small scale; keeps DuckDB Iceberg
+  write API simple)
+
+Sub-steps. Each is its own ticket when ready; only the next one
+is pre-opened to avoid stale work.
+
+- **P1.1 (`ticket:9gbi98mx`, ready)** — bootstrap. Persistent
+  MotherDuck secrets (`r2_pipelines_s3` already created in
+  Phase 0; confirm + document; iceberg session secret pattern
+  too). New `src/dream_job_radar/pipelines/_iceberg.py` catalog
+  factory mirroring `_r2.py`. Smoke-create `mart` namespace.
+  No mart table writes yet.
+- **P1.2** — writer. New `pipelines/iceberg_mart.py` end-to-end:
+  read `current_open_roles` snapshot, append into
+  `mart.job_postings_daily_snapshot` (creating on first run),
+  resolve fresh metadata pointer, refresh MotherDuck mart copy
+  via `CREATE OR REPLACE TABLE`. Idempotent on same-day rerun
+  (skip append if `snapshot_date = current_date` rows already
+  present). Local-only execution.
+- **P1.3** — cron wire. Add Iceberg mart step to
+  `.github/workflows/cron.yml` after the existing radar
+  pipelines. Secret env shape, `unsafe_enable_version_guessing`
+  posture, error containment (mart failure must not break raw
+  ingest).
+- **P1.4** — Dive panel. One panel reading
+  `mart.job_postings_daily_snapshot` (e.g. open-roles-per-day
+  line chart). Verify Dive sees the table after a refresh
+  cycle.
+- **P1.5** — critique + wiki + retro. Promote the degraded-
+  reader pattern into wiki (`extractor-shape` extension or new
+  `wiki:lakehouse-iceberg` page), close initiative.
 
 ## Phase 2 — Wiki + retro
 
@@ -112,3 +141,17 @@ Phase 1 not opened. Plan status → `blocked` until user
 explicitly reroutes via initiative update. See
 `research:lakehouse-iceberg-spike` Decision section for
 re-scope options A-F.
+
+## 2026-05-04 — Re-scope to shape A' → plan active
+
+User chose shape A' after follow-up diagnostic confirmed:
+auth ruled out (persistent MotherDuck S3 secret didn't fix
+SIGSEGV); degraded reader workflow (PyIceberg resolves
+metadata pointer → MotherDuck `iceberg_scan` reads, including
+freshly-appended rows; `CREATE OR REPLACE TABLE … AS SELECT
+* FROM iceberg_scan(…)` materializes into native MotherDuck
+table cleanly).
+
+Phase 0 ticket → ready to close. Phase 1 substeps populated
+above; first ticket `ticket:9gbi98mx` (P1.1 bootstrap) opened.
+Plan status → `active`.

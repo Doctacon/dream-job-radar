@@ -1,9 +1,9 @@
 ---
 id: initiative:lakehouse-iceberg
 kind: initiative
-status: blocked
+status: active
 created_at: 2026-05-04T02:49:06Z
-updated_at: 2026-05-04T03:05:00Z
+updated_at: 2026-05-04T03:22:28Z
 scope:
   kind: repository
   repositories:
@@ -132,10 +132,15 @@ Phase 1 (only if Phase 0 green):
 Single ticket. Compresses to: "create catalog, write a table,
 read it from MotherDuck, write findings". Halt gate.
 
-## M1 — One mart table live (only if M0 green)
+## M1 — One mart table live (shape A')
 
-Append-only Iceberg table written on a schedule, readable from
-MotherDuck.
+Append-only Iceberg table `mart.job_postings_daily_snapshot`
+written on the existing radar cron schedule. Each run appends
+one row per currently-open role tagged with `snapshot_date =
+current_date`. Refresh step rewrites a same-named MotherDuck
+table from the freshly-resolved Iceberg metadata pointer so
+Dive panels read native MotherDuck. Idempotent on same-day
+rerun (no double-snapshot).
 
 ## M2 — Wiki + retrospective
 
@@ -207,5 +212,33 @@ failure mode is a hard server crash, not a clean error.
 Initiative status → `blocked`. Halt-gate honored: no auto-pivot
 to Lakekeeper, S3, or engine swap. Re-scope options surfaced in
 `research:lakehouse-iceberg-spike` "Decision" section (A
-through F). Awaiting explicit user direction before any further
-work.
+through F).
+
+## 2026-05-04 — Follow-up diagnostic + re-scope
+
+Two further diagnostics under `ticket:mka30wgd` (same session):
+
+1. Created persistent S3 secret in MotherDuck workspace
+   (scope `s3://pipelines`). MotherDuck `ATTACH` + `SELECT`
+   still SIGSEGVs. Auth ruled out as cause; bug is in
+   MotherDuck's hosted `loadTable`-mediated read pipeline for
+   R2 Iceberg specifically.
+2. Composed the degraded reader workflow end-to-end:
+   PyIceberg `load_table(<fqn>)` → `metadata_location` →
+   MotherDuck `iceberg_scan(<location>)`. Reads succeed,
+   freshly-appended rows visible after re-resolving pointer,
+   `CREATE OR REPLACE TABLE … AS SELECT * FROM iceberg_scan(…)`
+   materializes into a native MotherDuck table.
+
+Re-scope decision: **shape A' — Iceberg-canonical mart with
+MotherDuck materialization**. Writer = PyIceberg → R2 Data
+Catalog (canonical, ACID, time-travel, open format). Refresh
+step in the same Python entrypoint resolves the fresh metadata
+pointer and runs `CREATE OR REPLACE TABLE` in MotherDuck so
+Dive panels read native MotherDuck tables. Catalog ATTACH path
+stays disabled until MotherDuck patches the crash; switching to
+it later is a one-line change.
+
+Initiative status → `active`. Phase 1 opened. First ticket =
+`ticket:9gbi98mx` (P1.1 bootstrap). Plan revised to carry the
+materialization step explicitly.
