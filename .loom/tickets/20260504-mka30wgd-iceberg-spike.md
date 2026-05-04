@@ -1,11 +1,11 @@
 ---
 id: ticket:mka30wgd
 kind: ticket
-status: ready
+status: complete_pending_acceptance
 change_class: research-spike
 risk_class: low
 created_at: 2026-05-04T02:49:06Z
-updated_at: 2026-05-04T02:49:06Z
+updated_at: 2026-05-04T03:05:00Z
 scope:
   kind: repository
   repositories:
@@ -119,4 +119,33 @@ captured at the exact step and documented.
 
 # Status Summary
 
-Drafted 2026-05-04. Ready. Awaiting execution.
+Drafted 2026-05-04. Executed same day.
+
+## Outcome 2026-05-04: PARTIAL — halt gate triggered
+
+R2 Data Catalog provisioned + write path proven (PyIceberg).
+MotherDuck `ATTACH` succeeds at metadata layer; `SELECT *`
+catalog-mediated SIGSEGVs (exit 139) on MotherDuck server.
+Local DuckDB 1.5.2 reads cleanly. MotherDuck +
+`iceberg_scan(metadata_path)` direct also works.
+
+Acceptance review:
+
+- AC1: catalog provisioned, URI/auth/binding documented in
+  `research:lakehouse-iceberg-spike` — done.
+- AC2: trivial Iceberg table written via PyIceberg (≥1 row,
+  6 rows after 2 appends) — done.
+- AC3: ATTACH succeeds; SELECT fails reproducibly with SIGSEGV;
+  exact failure captured — done (failure path).
+- AC4: Findings + Decision populated; decision = partial; halt —
+  done.
+- AC5: versions pinned (duckdb 1.5.2, pyiceberg 0.11.1,
+  pyiceberg-core 0.8.0, MotherDuck server v1.5.2) — done.
+- AC6: live ingest untouched — done.
+
+All ACs met. Decision per halt-gate is partial → halt Phase 1
+pending explicit user re-scope. No auto-pivot to Lakekeeper /
+Polaris / S3 / engine swap.
+
+Ticket parks at `complete_pending_acceptance` until user closes
+or reroutes via initiative update.

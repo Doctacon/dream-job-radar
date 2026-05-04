@@ -1,9 +1,9 @@
 ---
 id: research:lakehouse-iceberg-spike
 kind: research
-status: active
+status: complete
 created_at: 2026-05-04T02:49:06Z
-updated_at: 2026-05-04T02:49:06Z
+updated_at: 2026-05-04T03:05:00Z
 scope:
   kind: repository
   repositories:
@@ -111,23 +111,150 @@ To be populated as the spike runs. Initial reading:
 
 # Evidence
 
-(Populated by `ticket:mka30wgd` execution.)
+Located under `.loom/evidence/lakehouse-iceberg-spike/`:
+
+- `spike_pyiceberg.py` — write path (PyIceberg → R2 Data Catalog).
+- `run1.log`, `run2.log` — successful PyIceberg runs (3 rows
+  per append, 2 snapshots after 2 appends).
+- `spike_motherduck_attach.py` — MotherDuck ATTACH probe.
+- `run_md_attach.log`, `run_md_attach2.log`,
+  `run_md_attach3.log`, `run_md_attach4.log` — progressive
+  diagnostics. `run_md_attach4.log` confirms ATTACH succeeds,
+  catalog/schema/table list succeed, SELECT crashes with
+  SIGSEGV (exit 139).
+- `spike_local_duckdb.py` + `spike_md_scan.py` — diagnostic
+  scripts isolating the failure.
+- `run_md_scan.log` — MotherDuck + direct `iceberg_scan` succeeds.
+
+Versions pinned at the time of spike (2026-05-04):
+
+- `duckdb` 1.5.2 (local + MotherDuck client)
+- `pyiceberg` 0.11.1
+- `pyiceberg-core` 0.8.0
+- DuckDB iceberg extension auto-loaded by `INSTALL iceberg; LOAD
+  iceberg;` (version not surfaced)
+- MotherDuck server reports `v1.5.2`
+
+R2 Data Catalog state:
+
+- Bucket: `pipelines`
+- Catalog enabled via Cloudflare API:
+  `POST /accounts/{account_id}/r2-catalog/{bucket}/enable`
+- Warehouse name: `<account_id>_<bucket>`
+- REST URI:
+  `https://catalog.cloudflarestorage.com/<account_id>/<bucket>`
+- Auth: R2 API token (existing `R2_TOKEN_VALUE`); no extra
+  scoping needed for write + read against this bucket.
+- Iceberg metadata stored at
+  `s3://<bucket>/__r2_data_catalog/<uuid>/<uuid>/metadata/...`
 
 # Findings
 
-(Populated post-spike.)
+## What works
+
+1. **PyIceberg → R2 Data Catalog (write).** Create namespace,
+   create table, append PyArrow batches. Idempotent across runs.
+   Snapshots accumulate. No special R2 adapter needed —
+   generic `pyiceberg.catalog.rest.RestCatalog` with `uri`,
+   `warehouse`, `token`.
+2. **Local DuckDB 1.5.2 reads R2 Iceberg cleanly via ATTACH.**
+   Both `ATTACH ... TYPE iceberg ...` + `SELECT` and direct
+   `iceberg_scan('s3://.../metadata.json')` return rows.
+   Requires `unsafe_enable_version_guessing = true` and an S3
+   secret scoped to `s3://<bucket>` pointing at the R2
+   endpoint.
+3. **MotherDuck ATTACH succeeds at the metadata layer.**
+   `SHOW DATABASES`, `SHOW SCHEMAS`, listing tables in
+   `r2_lake.spike` all return the expected names.
+4. **MotherDuck + direct `iceberg_scan(metadata_path)` works.**
+   Full row read, correct values, no crash.
+
+## What fails
+
+5. **MotherDuck + `SELECT * FROM r2_lake.spike.trivial`
+   (catalog-mediated data read) crashes with SIGSEGV (exit
+   139), no error message.** Reproducible across multiple runs.
+   The crash happens in MotherDuck-server-side native code; the
+   client connection dies hard. Same query on local DuckDB
+   1.5.2 with identical secret + extension setup succeeds.
+
+## Failure boundary
+
+The breakage is narrow and specific: **MotherDuck's
+catalog-attach-mediated data read against R2 Data Catalog**.
+Everything else in the stack composes:
+
+| Path | Result |
+|---|---|
+| PyIceberg write to R2 Data Catalog | OK |
+| Local DuckDB ATTACH + SELECT | OK |
+| Local DuckDB `iceberg_scan` direct | OK |
+| MotherDuck ATTACH + metadata listing | OK |
+| MotherDuck `iceberg_scan` direct | OK |
+| **MotherDuck ATTACH + SELECT** | **SIGSEGV** |
+
+This matches MotherDuck's documented constraint that REST
+catalog reads are "limited to S3, S3 Tables, GCS" — R2 is not
+in their supported set, but the failure is a hard crash rather
+than a clean unsupported-backend error.
 
 # Decision
 
-(Populated post-spike. One of: continue to Phase 1 / halt
-initiative and re-scope.)
+**Partial.** Per `plan:lakehouse-iceberg` halt-gate definition,
+this matches the "partial" outcome exactly:
+
+> partial (e.g. PyIceberg writes work but MotherDuck attach
+> fails; iceberg_scan direct read works) → halt, document in
+> research, decide explicitly whether to proceed with a
+> degraded reader path or re-scope.
+
+Halting Phase 1 pending explicit user decision.
+
+## Re-scope options surfaced
+
+A. **Degraded reader path: MotherDuck + `iceberg_scan` direct.**
+   Skip catalog ATTACH; query each table by metadata pointer.
+   Loses transparent multi-table catalog UX; gains: keeps
+   MotherDuck as canonical reader, keeps R2 Data Catalog as
+   write surface. Operational cost: code that resolves the
+   current metadata pointer per table (PyIceberg can list
+   tables and return their metadata locations).
+
+B. **Local-DuckDB reader, MotherDuck demoted.** Run analytics
+   queries from a local DuckDB process with full ATTACH.
+   Loses MotherDuck's hosted UX (no Dive over Iceberg).
+
+C. **File MotherDuck feature request, wait.** R2 may eventually
+   join their supported REST backends. Pause initiative.
+
+D. **Pivot reader to a different engine** (DuckDB CLI, Spark,
+   Trino, Daft) — none currently in the stack.
+
+E. **Re-scope catalog**: drop R2 Data Catalog, self-host
+   Lakekeeper or use an S3 backend. Loses zero-egress
+   advantage, gains MotherDuck compatibility (S3 is in their
+   supported list).
+
+F. **Cancel initiative** entirely.
+
+User direction was "if r2 data catalog flops, we need to stop
+and rethink." R2 Data Catalog itself did not flop — write
+works, generic REST clients work, local DuckDB works.
+MotherDuck-as-canonical-reader on R2 Iceberg flopped. That is
+the rethink boundary. No automatic pivot; surface for explicit
+choice.
 
 # Open Questions
 
-- Does R2 Data Catalog auth integrate with MotherDuck's secrets
-  surface, or does the attach require an inline token?
-- What is R2 Data Catalog's actual REST endpoint format?
-- Does PyIceberg have an out-of-the-box R2 Data Catalog adapter,
-  or is it generic REST + extra config?
-- Does dlt's iceberg destination need any R2-specific tweaks
-  beyond bucket_url + REST catalog config?
+- Will MotherDuck's REST-catalog support for R2 expand? File a
+  feature request? (Outside this spike.)
+- Does the SIGSEGV reproduce against S3 Tables or GCS REST
+  catalogs, or is R2-specific? (Outside this spike; would
+  require provisioning either.)
+- Does the `unsafe_enable_version_guessing` toggle play any
+  role in the MotherDuck crash, or is it a red herring? (Local
+  DuckDB needs the toggle and works; MotherDuck has the toggle
+  and crashes — likely red herring.)
+- If we go with option A (degraded reader), what is the
+  ergonomic cost of resolving metadata pointers in SQL views or
+  Dive panels?

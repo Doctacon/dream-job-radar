@@ -17,3 +17,8 @@ build-backend = "hatchling.build"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/dream_job_radar"]
+
+[dependency-groups]
+dev = [
+    "pyiceberg[pyarrow,s3fs]>=0.11.1",
+]

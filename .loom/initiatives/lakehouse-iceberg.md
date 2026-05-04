@@ -1,9 +1,9 @@
 ---
 id: initiative:lakehouse-iceberg
 kind: initiative
-status: active
+status: blocked
 created_at: 2026-05-04T02:49:06Z
-updated_at: 2026-05-04T02:49:06Z
+updated_at: 2026-05-04T03:05:00Z
 scope:
   kind: repository
   repositories:
@@ -189,4 +189,23 @@ Initial ticket: `ticket:mka30wgd` (Phase 0 spike).
 
 Drafted 2026-05-04 after `initiative:partition-r2-layout`
 closed. User confirmed Iceberg over DuckLake and confirmed
-spike-first-with-halt posture. Phase 0 ticket pending compile.
+spike-first-with-halt posture.
+
+## 2026-05-04 — Phase 0 spike: PARTIAL → halt
+
+`ticket:mka30wgd` executed same day. Outcome: partial.
+
+What works: PyIceberg writes to R2 Data Catalog; local DuckDB
+reads via ATTACH or `iceberg_scan`; MotherDuck ATTACH metadata
+listing; MotherDuck `iceberg_scan` direct.
+
+What fails: MotherDuck catalog-mediated `SELECT` SIGSEGVs (exit
+139) on R2 Data Catalog tables. Matches MotherDuck's documented
+"REST catalog reads limited to S3, S3 Tables, GCS" constraint;
+failure mode is a hard server crash, not a clean error.
+
+Initiative status → `blocked`. Halt-gate honored: no auto-pivot
+to Lakekeeper, S3, or engine swap. Re-scope options surfaced in
+`research:lakehouse-iceberg-spike` "Decision" section (A
+through F). Awaiting explicit user direction before any further
+work.

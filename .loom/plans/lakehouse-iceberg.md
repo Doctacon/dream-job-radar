@@ -1,9 +1,9 @@
 ---
 id: plan:lakehouse-iceberg
 kind: plan
-status: active
+status: blocked
 created_at: 2026-05-04T02:49:06Z
-updated_at: 2026-05-04T02:49:06Z
+updated_at: 2026-05-04T03:05:00Z
 scope:
   kind: repository
   repositories:
@@ -100,5 +100,15 @@ this initiative.
 
 # Status Summary
 
-Drafted alongside `initiative:lakehouse-iceberg`. Phase 0
-ticket pending compile.
+Drafted alongside `initiative:lakehouse-iceberg`.
+
+## 2026-05-04 — Phase 0 partial → plan blocked
+
+Phase 0 ticket `ticket:mka30wgd` executed and parked
+`complete_pending_acceptance`. Outcome was partial per the
+halt-gate definition (PyIceberg writes work, local DuckDB
+reads work, MotherDuck catalog-mediated `SELECT` SIGSEGVs).
+Phase 1 not opened. Plan status → `blocked` until user
+explicitly reroutes via initiative update. See
+`research:lakehouse-iceberg-spike` Decision section for
+re-scope options A-F.
