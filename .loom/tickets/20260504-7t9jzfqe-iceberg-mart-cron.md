@@ -1,11 +1,11 @@
 ---
 id: ticket:7t9jzfqe
 kind: ticket
-status: ready
+status: closed
 change_class: code-behavior
 risk_class: medium
 created_at: 2026-05-04T04:05:00Z
-updated_at: 2026-05-04T04:05:00Z
+updated_at: 2026-05-05T02:30:00Z
 scope:
   kind: repository
   repositories:
@@ -116,4 +116,40 @@ Iceberg snapshot lands". Evidence:
 # Status Summary
 
 Drafted 2026-05-04 immediately after `ticket:q67za0wk` (P1.2
-writer) closed. Ready.
+writer) closed. Executed same session.
+
+## Outcome 2026-05-05: closed
+
+All ACs met:
+
+- AC1: workflow edited as specified. Iceberg mart step inserted
+  between views refresh and health check, `if: always()`,
+  `continue-on-error: true`. `R2_TOKEN_VALUE` env wired.
+- AC2: GH run 25354628535 (workflow_dispatch) green
+  end-to-end. Iceberg mart step succeeded.
+- AC3: This same run hit the idempotent-skip path because P1.2
+  local run earlier today (same UTC date) had already
+  populated. Step output:
+  `[iceberg_mart] skip append: 120 rows already snapshotted today`.
+  Materialization still refreshed. AC3's behavioral claim
+  satisfied without a second dispatch.
+- AC4: `SELECT count(*), count(DISTINCT snapshot_date),
+  max(snapshot_date) FROM mart.job_postings_daily_snapshot;`
+  returns `(120, 1, date(2026,05,05))` post-cron.
+- AC5: `R2_TOKEN_VALUE` added to GH repo secrets via `gh secret
+  set` before dispatch (visible in `gh secret list`).
+
+Notes:
+
+- Cron scheduled fire is daily 12:00 UTC. Today's Phoenix
+  evening dispatch ran at 02:29 UTC = 2026-05-05 in UTC, so
+  the snapshot landed under that UTC date. Subsequent cron at
+  12:00 UTC tomorrow will be 2026-05-06 UTC and will append a
+  fresh row set.
+- 122-vs-120 visible in step output: cron just refreshed views
+  before the mart step, finding 122 currently-open roles. The
+  Iceberg snapshot stays at the 120 it already had for today's
+  UTC date (idempotency holds). Tomorrow's cron will write
+  whatever current_open_roles holds at 12:00 UTC.
+
+Next: P1.4 (Dive panel). Will be opened as a fresh ticket.
