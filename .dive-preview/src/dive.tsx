@@ -3,6 +3,7 @@ import { useSQLQuery } from "@motherduck/react-sql-query";
 const N = (v: unknown): number => (v != null ? Number(v) : 0);
 
 const TABLE = `"acorn-granary"."main"."current_open_roles"`;
+const MART_TABLE = `"acorn-granary"."mart"."job_postings_daily_snapshot"`;
 const RECENT_FILTER = "coalesce(posted_at, first_seen_at) >= current_date - INTERVAL 6 DAY";
 
 // Light-mode theme — loughondata palette flipped for sunlight
@@ -46,8 +47,18 @@ export default function DreamJobRadar() {
     ORDER BY coalesce(posted_at, first_seen_at) DESC NULLS LAST
   `);
 
+  const snapshots = useSQLQuery(`
+    SELECT
+      strftime(snapshot_date, '%Y-%m-%d') AS snapshot_date,
+      count(*) AS roles
+    FROM ${MART_TABLE}
+    GROUP BY snapshot_date
+    ORDER BY snapshot_date
+  `);
+
   const summaryRow = (Array.isArray(summary.data) ? summary.data : [])[0] ?? {};
   const roleRows = Array.isArray(roles.data) ? roles.data : [];
+  const snapshotRows = Array.isArray(snapshots.data) ? snapshots.data : [];
 
   return (
     <div
@@ -89,6 +100,20 @@ export default function DreamJobRadar() {
           <KPI loading={summary.isLoading} value={N(summaryRow.locations)} label="Locations" />
           <KPI loading={summary.isLoading} value={N(roleRows.length)} label="Rows shown" />
         </div>
+
+        <h2
+          className="text-lg font-semibold mb-4 pb-3"
+          style={{ color: T.text, borderBottom: `1px solid ${T.border}` }}
+        >
+          Daily snapshot history
+        </h2>
+        <p className="text-sm mb-4" style={{ color: T.muted, lineHeight: 1.6 }}>
+          Open-role count snapshotted once per UTC day into Apache Iceberg
+          on Cloudflare R2 (R2 Data Catalog), then materialized back into
+          MotherDuck for this view.
+        </p>
+        <SnapshotStrip rows={snapshotRows} loading={snapshots.isLoading} />
+        <div className="mb-12" />
 
         <h2
           className="text-lg font-semibold mb-4 pb-3"
@@ -198,6 +223,60 @@ function KPI({ loading, value, label }: { loading: boolean; value: number; label
       <p className="text-sm mt-2" style={{ color: T.muted }}>
         {label}
       </p>
+    </div>
+  );
+}
+
+function SnapshotStrip({
+  rows,
+  loading,
+}: {
+  rows: Array<Record<string, unknown>>;
+  loading: boolean;
+}) {
+  if (loading) {
+    return (
+      <div
+        className="animate-pulse rounded"
+        style={{ height: 48, background: T.borderFaint }}
+      />
+    );
+  }
+  if (rows.length === 0) {
+    return (
+      <p className="text-xs" style={{ color: T.faint }}>
+        No snapshots yet.
+      </p>
+    );
+  }
+  const max = Math.max(1, ...rows.map((r) => Number(r.roles ?? 0)));
+  return (
+    <div
+      style={{
+        display: "flex",
+        alignItems: "flex-end",
+        gap: 4,
+        height: 48,
+        padding: "4px 0",
+        borderBottom: `1px solid ${T.borderFaint}`,
+      }}
+    >
+      {rows.map((r, i) => {
+        const v = Number(r.roles ?? 0);
+        const h = Math.max(2, Math.round((v / max) * 40));
+        return (
+          <div
+            key={i}
+            title={`${String(r.snapshot_date)}: ${v} open roles`}
+            style={{
+              flex: 1,
+              height: `${h}px`,
+              background: T.accent,
+              borderRadius: 2,
+            }}
+          />
+        );
+      })}
     </div>
   );
 }
