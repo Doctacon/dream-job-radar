@@ -69,6 +69,16 @@ jobs:
         continue-on-error: true
         run: uv run python -m dream_job_radar.pipelines.remoteok
 
+      - name: Tech Jobs for Good pipeline
+        id: techjobsforgood
+        continue-on-error: true
+        run: uv run python -m dream_job_radar.pipelines.techjobsforgood
+
+      - name: GIS Jobs Clearinghouse pipeline
+        id: gjc
+        continue-on-error: true
+        run: uv run python -m dream_job_radar.pipelines.gjc
+
       - name: Apply MotherDuck views
         if: always()
         run: |

@@ -52,6 +52,8 @@ source kind:
 | Rippling        | `rippling`   |
 | Polymer         | `polymer`    |
 | RemoteOK        | `remoteok`   |
+| Tech Jobs for Good | `techjobsforgood` |
+| GIS Jobs Clearinghouse | `gjc` |
 
 The dlt filesystem destination uses
 `bucket_url = s3://<R2_BUCKET>/raw` (no source-kind segment) and the

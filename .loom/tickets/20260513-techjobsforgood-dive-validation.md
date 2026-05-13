@@ -2,7 +2,7 @@
 
 ID: ticket:20260513-techjobsforgood-dive-validation
 Type: Ticket
-Status: open
+Status: closed
 Created: 2026-05-13
 Updated: 2026-05-13
 Risk: low - expected to validate existing relevance-first Dive rather than redesign it
@@ -33,8 +33,11 @@ May update Dive copy and README if validation reveals confusing wording. Must no
 
 ## Current State
 
-Ready after pipeline integration closes.
+Closed. The existing Dive still queries `relevant_open_roles` and displays `source_kind` provenance, so no Dive code or live publish was needed. MotherDuck validation showed Tech Jobs for Good contributes 20 rows to `relevant_open_roles`; source counts were `ashby = 1`, `greenhouse = 13`, and `techjobsforgood = 20`. RemoteOK remains at 0 relevant rows, so the prior generic-company noise guard remains intact.
+
+No MotherDuck data sharing was performed. Screenshots remain the sharing path.
 
 ## Journal
 
 - 2026-05-13: Created ticket with Status `open`.
+- 2026-05-13: Set Status `active`, validated existing Dive query path/source provenance via MotherDuck counts, confirmed no share operation, and closed. ACC-001/002/003/004 satisfied.

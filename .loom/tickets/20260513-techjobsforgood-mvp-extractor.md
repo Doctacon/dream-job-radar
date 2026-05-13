@@ -2,7 +2,7 @@
 
 ID: ticket:20260513-techjobsforgood-mvp-extractor
 Type: Ticket
-Status: open
+Status: closed
 Created: 2026-05-13
 Updated: 2026-05-13
 Risk: medium - adds a new public HTML source that may change layout
@@ -34,8 +34,13 @@ May add one extractor module and one pipeline module for Tech Jobs for Good. May
 
 ## Current State
 
-Ready after `ticket:20260513-techjobsforgood-source-contract` closes. The likely first move is to probe current public HTML for stable listing/card selectors and pagination.
+Closed. Added `src/dream_job_radar/extractors/techjobsforgood.py` and `src/dream_job_radar/pipelines/techjobsforgood.py`. The extractor parses public visible Tech Jobs for Good listing cards for `Software Engineering` and `Data + Analytics`, keeps only approved impact areas, captures canonical fields, and adds source-specific fields: `tjfg_job_function`, `tjfg_impact_areas`, `tjfg_company_blurb`, `tjfg_salary`, and `tjfg_posted_text`.
+
+Validation found 30 public cards on page 1 and 25 on page 2, with 36 matched public visible roles after function/impact filtering. `uv run python -m dream_job_radar.pipelines.techjobsforgood` loaded 36 rows with no failed jobs. Existing curated and RemoteOK extractor files were not changed.
+
+No separate audit was run because this is a single-source extractor with command validation and downstream SQL validation in the following tickets.
 
 ## Journal
 
 - 2026-05-13: Created ticket with Status `open`.
+- 2026-05-13: Set Status `active`, implemented Tech Jobs for Good extractor/pipeline, validated 36 matched public visible roles, ran the source pipeline successfully, and closed. ACC-001/002/003/004 satisfied.

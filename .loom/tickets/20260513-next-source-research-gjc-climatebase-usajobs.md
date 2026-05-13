@@ -2,7 +2,7 @@
 
 ID: ticket:20260513-next-source-research-gjc-climatebase-usajobs
 Type: Ticket
-Status: open
+Status: closed
 Created: 2026-05-13
 Updated: 2026-05-13
 Risk: medium - future source choice affects recall, noise, and implementation complexity
@@ -31,8 +31,9 @@ May fetch public docs/pages, run small read-only probes, and create/update a Loo
 
 ## Current State
 
-Ready to start. Initial shaping found GJC has a public RSS feed with geospatial jobs, Tech Jobs for Good is stronger for immediate implementation, Climatebase is mission-fit but public fetch looked SPA/blocked, and USAJobs needs more targeted API/access research.
+Closed. Created `research:20260513-next-source-wave`. Recommendation: GIS Jobs Clearinghouse RSS is the best next implementation candidate if another source is added immediately; Climatebase is deferred due to blocked/SPA-heavy public fetch behavior; USAJobs is deferred until official API credentials/access are configured.
 
 ## Journal
 
 - 2026-05-13: Created ticket with Status `open` as the parallel research track for `plan:20260513-broaden-mission-source-discovery`.
+- 2026-05-13: Set Status `active`, probed GJC RSS, Climatebase public pages, USAJobs website/API, recorded durable research in `research:20260513-next-source-wave`, and closed. ACC-001/002/003/004 satisfied.

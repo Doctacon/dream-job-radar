@@ -92,8 +92,14 @@ WITH broad_context AS (
         source_kind,
         ats_slug,
         role_id,
-        remoteok_description,
-        remoteok_tags
+        lower(concat_ws(
+            ' ',
+            coalesce(json_extract_string(raw_json, '$.description'), ''),
+            coalesce(CAST(json_extract(raw_json, '$.tags') AS VARCHAR), ''),
+            coalesce(json_extract_string(raw_json, '$.company_blurb'), ''),
+            coalesce(CAST(json_extract(raw_json, '$.impact_areas') AS VARCHAR), ''),
+            coalesce(json_extract_string(raw_json, '$.job_function'), '')
+        )) AS source_domain_text_lc
     FROM read_parquet(
         'r2://${R2_BUCKET}/raw/*/*/**/*.parquet',
         filename = true,
@@ -101,7 +107,7 @@ WITH broad_context AS (
         hive_partitioning = true
     )
     WHERE filename NOT LIKE '%/_dlt_%'
-      AND source_kind = 'remoteok'
+      AND source_kind IN ('remoteok', 'techjobsforgood', 'gjc')
       AND ats_slug IS NOT NULL
       AND role_id IS NOT NULL
       AND make_date(year, CAST(month AS INTEGER), CAST(day AS INTEGER))
@@ -120,8 +126,7 @@ classified AS (
             ' ',
             coalesce(c.company, ''),
             coalesce(c.title, ''),
-            coalesce(b.remoteok_description, ''),
-            coalesce(b.remoteok_tags, '')
+            coalesce(b.source_domain_text_lc, '')
         )) AS domain_text_lc
     FROM current_open_roles c
     LEFT JOIN broad_context b
@@ -148,7 +153,9 @@ FROM classified
 WHERE
     (
         (
-            -- Explicit remote US/worldwide only. Vague "Remote" stays out.
+            -- Remote is eligible by default, but explicit non-US/non-worldwide
+            -- remote regions stay out unless the same string also names US or
+            -- worldwide/global eligibility.
             location_lc LIKE '%remote%'
             AND (
                 location_lc LIKE '%united states%'
@@ -156,6 +163,34 @@ WHERE
                 OR regexp_matches(location_lc, '(^|[^a-z0-9])u\.?s\.?a\.?([^a-z0-9]|$)')
                 OR location_lc LIKE '%worldwide%'
                 OR location_lc LIKE '%global%'
+                OR NOT (
+                    location_lc LIKE '%canada%'
+                    OR location_lc LIKE '%ontario%'
+                    OR location_lc LIKE '%british columbia%'
+                    OR regexp_matches(location_lc, '(^|[^a-z0-9])uk([^a-z0-9]|$)')
+                    OR location_lc LIKE '%united kingdom%'
+                    OR location_lc LIKE '%europe%'
+                    OR location_lc LIKE '%emea%'
+                    OR location_lc LIKE '%apac%'
+                    OR location_lc LIKE '%asia%'
+                    OR location_lc LIKE '%australia%'
+                    OR location_lc LIKE '%austria%'
+                    OR location_lc LIKE '%belgium%'
+                    OR location_lc LIKE '%germany%'
+                    OR location_lc LIKE '%slovenia%'
+                    OR location_lc LIKE '%france%'
+                    OR location_lc LIKE '%netherlands%'
+                    OR location_lc LIKE '%denmark%'
+                    OR location_lc LIKE '%estonia%'
+                    OR location_lc LIKE '%ireland%'
+                    OR location_lc LIKE '%portugal%'
+                    OR location_lc LIKE '%sweden%'
+                    OR location_lc LIKE '%switzerland%'
+                    OR location_lc LIKE '%india%'
+                    OR location_lc LIKE '%mexico%'
+                    OR location_lc LIKE '%brazil%'
+                    OR location_lc LIKE '%latin america%'
+                )
             )
         )
         OR (
@@ -176,7 +211,7 @@ WHERE
     )
     AND (
         -- Curated company-board sources are already operator-approved.
-        source_kind <> 'remoteok'
+        source_kind NOT IN ('remoteok', 'techjobsforgood')
         OR company_domain_decision = 'approved'
         OR (
             company_domain_decision IS NULL

@@ -2,7 +2,7 @@
 
 ID: ticket:20260513-techjobsforgood-pipeline-integration
 Type: Ticket
-Status: open
+Status: closed
 Created: 2026-05-13
 Updated: 2026-05-13
 Risk: medium - wires a public HTML source into scheduled refresh
@@ -35,8 +35,13 @@ May edit the all-source runner, scheduled workflow, README source table, and doc
 
 ## Current State
 
-Ready after the domain gate ticket closes.
+Closed. Tech Jobs for Good is wired into `src/dream_job_radar/pipelines/radar.py` with exception isolation, and `.github/workflows/refresh.yml` runs `uv run python -m dream_job_radar.pipelines.techjobsforgood` with `continue-on-error: true` before review seed/view application. README documents the source table, manual command, public-visible-only boundary, and broad-source relevance gate. `.loom/wiki/extractor-shape.md` records `techjobsforgood` as a source kind.
+
+Validation ran `uv run python -m compileall src scripts`, `uv run python -m dream_job_radar.pipelines.radar`, `uv run python scripts/apply_company_domain_review.py`, `uv run python scripts/apply_views.py`, and `uv run python scripts/health_check.py`. Health check passed with 10 observed slugs, including `techjobsforgood/jobs` fresh with 36 rows.
+
+No separate audit was run because the integration was validated through source, all-source, view, and health-check commands.
 
 ## Journal
 
 - 2026-05-13: Created ticket with Status `open`.
+- 2026-05-13: Set Status `active`, wired Tech Jobs for Good into local/scheduled refresh, updated README/wiki, ran all-source and health validation, and closed. ACC-001/002/003/004 satisfied.

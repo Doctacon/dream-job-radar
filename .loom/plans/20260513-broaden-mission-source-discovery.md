@@ -2,7 +2,7 @@
 
 ID: plan:20260513-broaden-mission-source-discovery
 Type: Plan
-Status: open
+Status: completed
 Created: 2026-05-13
 Updated: 2026-05-13
 Risk: medium - adds new broad discovery sources while preserving relevance gates that protect the Dive from noise
@@ -94,8 +94,9 @@ The next likely source after Tech Jobs for Good is selected or rejected with dur
 
 ## Current State
 
-Plan is open. Child tickets are created and ready to execute in sequence. The next ticket is `ticket:20260513-techjobsforgood-source-contract`. The research ticket can run in parallel with implementation when capacity allows.
+Completed. Tech Jobs for Good was implemented as a public-visible mission-specific source and wired into local/scheduled refresh with failure isolation. Current validation shows 36 Tech Jobs for Good rows in `current_open_roles` and 20 in `relevant_open_roles`, increasing total relevant roles to 34 while RemoteOK remains at 0 relevant rows. The existing Dive can display the new source through `relevant_open_roles` without code changes. Follow-up research recommends GIS Jobs Clearinghouse RSS as the next implementation candidate, while Climatebase and USAJobs are deferred pending access feasibility.
 
 ## Journal
 
 - 2026-05-13: Created plan from operator choices: Tech Jobs for Good first, two-track implementation plus research, civic/climate/infrastructure impact areas, Software Engineering and Data + Analytics roles, impact areas as domain signal, public visible jobs only.
+- 2026-05-13: Closed all child tickets. Tech Jobs for Good source landed and next-source research completed. Set Status `completed`.

@@ -23,6 +23,8 @@ Source kinds and ATS slugs covered today:
 | `rippling`   | `kalkomey`   | https://api.rippling.com/platform/api/ats/v1/board/kalkomey/jobs      |
 | `polymer`    | `upstream-tech` | https://www.upstream.tech/careers (index) → https://jobs.upstream.tech/{id} (per-role JSON-LD) |
 | `remoteok`   | `remoteok`   | https://remoteok.com/api (broad discovery, company-domain gated)         |
+| `techjobsforgood` | `jobs` | https://www.techjobsforgood.com/jobs/ (public visible mission-specific listings) |
+| `gjc`        | `rss`        | https://www.gjc.org/cgi-bin/rssjobs.pl (public GIS Jobs Clearinghouse RSS) |
 
 ## Run the pipeline
 
@@ -65,9 +67,18 @@ uv run python -m dream_job_radar.pipelines.polymer
 # Public RemoteOK API; strict technical title/seniority filter before raw write.
 # User-facing visibility is gated by company-domain review/rules in relevant_open_roles.
 uv run python -m dream_job_radar.pipelines.remoteok
+
+# Tech Jobs for Good discovery slice → s3://$R2_BUCKET/raw/techjobsforgood/jobs/
+# Public visible Software Engineering and Data + Analytics listings in approved
+# civic/climate/infrastructure impact areas. Premium/login-only results are out of scope.
+uv run python -m dream_job_radar.pipelines.techjobsforgood
+
+# GIS Jobs Clearinghouse slice → s3://$R2_BUCKET/raw/gjc/rss/
+# Public RSS feed; company/location are parsed conservatively from RSS descriptions.
+uv run python -m dream_job_radar.pipelines.gjc
 ```
 
-Run all sources sequentially (Greenhouse → Ashby → sitemap → page → rippling → polymer → RemoteOK locally):
+Run all sources sequentially (Greenhouse → Ashby → sitemap → page → rippling → polymer → RemoteOK → Tech Jobs for Good → GJC locally):
 
 ```bash
 uv run python -m dream_job_radar.pipelines.radar
@@ -99,10 +110,11 @@ The public Dive is a relevance-first radar over
 
 - `current_open_roles` remains the full matching open-role inventory for recovery,
   debugging, and snapshot history.
-- `relevant_open_roles` is the normal user-facing surface. It includes explicit
-  remote US/worldwide roles and explicit Arizona-local roles, and excludes vague
-  remote, non-US remote, and non-Arizona onsite/hybrid roles.
-- Broad-discovery sources such as RemoteOK must also pass company/domain review
+- `relevant_open_roles` is the normal user-facing surface. It includes remote
+  roles unless the location explicitly names a non-US/non-worldwide remote
+  region, plus explicit Arizona-local roles; non-Arizona onsite/hybrid roles stay
+  out.
+- Broad-discovery sources such as RemoteOK, Tech Jobs for Good, and GJC must also pass company/domain review
   or deterministic mission-fit rules before they appear in `relevant_open_roles`.
   Unknown, pending, or rejected broad-discovery companies remain available in
   `current_open_roles` for review/debugging but are hidden from the Dive.
