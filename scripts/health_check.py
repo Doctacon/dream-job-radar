@@ -27,6 +27,9 @@ import duckdb
 from dotenv import load_dotenv
 
 STALE_THRESHOLD_HOURS = 36
+KNOWN_ZERO_MATCH_SOURCES = {
+    ("page", "felt"),
+}
 
 QUERY = """
 WITH all_fetches AS (
@@ -103,6 +106,15 @@ def main() -> None:
             continue
         if latest < stale_cutoff:
             age_h = (now - latest).total_seconds() / 3600
+            if (source_kind, ats_slug) in KNOWN_ZERO_MATCH_SOURCES:
+                print(
+                    f"[health] WARN  {source_kind}/{ats_slug} stale matched rows "
+                    f"ignored for known zero-match source: "
+                    f"latest={latest.isoformat()} ({age_h:.1f}h old) "
+                    f"latest_count={latest_n} prior_count={prior_n}"
+                )
+                continue
+
             print(
                 f"[health] STALE {source_kind}/{ats_slug} "
                 f"latest={latest.isoformat()} ({age_h:.1f}h old) "
