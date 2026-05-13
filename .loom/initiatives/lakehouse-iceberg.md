@@ -1,9 +1,9 @@
 ---
 id: initiative:lakehouse-iceberg
 kind: initiative
-status: active
+status: closed
 created_at: 2026-05-04T02:49:06Z
-updated_at: 2026-05-04T03:22:28Z
+updated_at: 2026-05-13T18:33:15Z
 scope:
   kind: repository
   repositories:
@@ -242,3 +242,10 @@ it later is a one-line change.
 Initiative status → `active`. Phase 1 opened. First ticket =
 `ticket:9gbi98mx` (P1.1 bootstrap). Plan revised to carry the
 materialization step explicitly.
+
+## 2026-05-13 - Closed as stale
+
+Operator requested stale Loom work be closed out. This initiative is
+no longer active execution state. Closure is administrative and does
+not claim remaining Iceberg/lakehouse work was accepted, completed,
+or still intended.

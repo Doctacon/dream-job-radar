@@ -1,9 +1,9 @@
 ---
 id: plan:lakehouse-iceberg
 kind: plan
-status: active
+status: closed
 created_at: 2026-05-04T02:49:06Z
-updated_at: 2026-05-04T03:22:28Z
+updated_at: 2026-05-13T18:33:15Z
 scope:
   kind: repository
   repositories:
@@ -155,3 +155,10 @@ table cleanly).
 Phase 0 ticket → ready to close. Phase 1 substeps populated
 above; first ticket `ticket:9gbi98mx` (P1.1 bootstrap) opened.
 Plan status → `active`.
+
+## 2026-05-13 - Closed as stale
+
+Operator requested stale Loom work be closed out. This plan is no
+longer active execution state. Closure is administrative and does
+not claim the Iceberg roadmap, Phase 1 sequence, or remaining
+follow-up work was accepted or still intended.
