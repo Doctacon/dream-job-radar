@@ -124,10 +124,12 @@ export default function DreamJobRadar() {
             Dream Job Radar
           </h1>
           <p className="text-sm mt-3" style={{ color: T.muted, lineHeight: 1.6 }}>
-            Location-relevant open roles across hand-picked outdoor, geospatial, and
-            mission-aligned companies. The primary metrics use the personalized relevance
-            view: explicit remote US/worldwide roles and explicit Arizona-local roles.
-            Full inventory remains available separately for debugging.
+            Company- and location-relevant open roles across hand-picked outdoor,
+            geospatial, civic, climate, and mission-aligned sources. The primary metrics
+            use the personalized relevance view: explicit remote US/worldwide roles or
+            explicit Arizona-local roles, with broad-discovery companies gated by
+            domain-fit review/rules. Full inventory remains available separately for
+            debugging.
             {inventoryRow.last_refresh ? (
               <>
                 {" "}Last refresh:{" "}

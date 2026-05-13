@@ -22,7 +22,7 @@ Source kinds and ATS slugs covered today:
 | `page`       | `wherobots`  | https://wherobots.com/careers/ (WordPress; `<li class="job-item">`)   |
 | `rippling`   | `kalkomey`   | https://api.rippling.com/platform/api/ats/v1/board/kalkomey/jobs      |
 | `polymer`    | `upstream-tech` | https://www.upstream.tech/careers (index) → https://jobs.upstream.tech/{id} (per-role JSON-LD) |
-| `remoteok`   | `remoteok`   | https://remoteok.com/api (strict technical discovery source)           |
+| `remoteok`   | `remoteok`   | https://remoteok.com/api (broad discovery, company-domain gated)         |
 
 ## Run the pipeline
 
@@ -63,10 +63,11 @@ uv run python -m dream_job_radar.pipelines.polymer
 
 # RemoteOK discovery slice → s3://$R2_BUCKET/raw/remoteok/remoteok/
 # Public RemoteOK API; strict technical title/seniority filter before raw write.
+# User-facing visibility is gated by company-domain review/rules in relevant_open_roles.
 uv run python -m dream_job_radar.pipelines.remoteok
 ```
 
-Run all sources sequentially (Greenhouse → Ashby → sitemap → page → rippling → polymer → RemoteOK):
+Run all sources sequentially (Greenhouse → Ashby → sitemap → page → rippling → polymer → RemoteOK locally):
 
 ```bash
 uv run python -m dream_job_radar.pipelines.radar
@@ -75,8 +76,14 @@ uv run python -m dream_job_radar.pipelines.radar
 Materialize the MotherDuck view (idempotent — `CREATE OR REPLACE`):
 
 ```bash
+uv run python scripts/apply_company_domain_review.py
 uv run python scripts/apply_views.py
 ```
+
+Broad-discovery company review decisions live in
+`motherduck/company_domain_review.sql`. Update that SQL seed for manual
+`approved`, `rejected`, or `pending` company decisions, then re-run the seed and
+view scripts above.
 
 Health check (per-(source_kind, ats_slug) freshness; non-zero exit
 when a previously-observed slug went stale):
@@ -95,6 +102,10 @@ The public Dive is a relevance-first radar over
 - `relevant_open_roles` is the normal user-facing surface. It includes explicit
   remote US/worldwide roles and explicit Arizona-local roles, and excludes vague
   remote, non-US remote, and non-Arizona onsite/hybrid roles.
+- Broad-discovery sources such as RemoteOK must also pass company/domain review
+  or deterministic mission-fit rules before they appear in `relevant_open_roles`.
+  Unknown, pending, or rejected broad-discovery companies remain available in
+  `current_open_roles` for review/debugging but are hidden from the Dive.
 - Primary KPIs count current relevant open roles, companies, and locations.
 - Daily snapshot history comes from
   `"acorn-granary"."mart"."job_postings_daily_snapshot"` and tracks the full

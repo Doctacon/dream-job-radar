@@ -71,7 +71,9 @@ jobs:
 
       - name: Apply MotherDuck views
         if: always()
-        run: uv run python scripts/apply_views.py
+        run: |
+          uv run python scripts/apply_company_domain_review.py
+          uv run python scripts/apply_views.py
 
       - name: Iceberg mart writer
         id: iceberg_mart

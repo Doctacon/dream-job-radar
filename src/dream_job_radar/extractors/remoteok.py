@@ -101,6 +101,7 @@ def _posted_at(job: dict) -> str:
 
 
 def _normalize(job: dict, fetched_at: str) -> dict:
+    tags = job.get("tags")
     return {
         "company": job.get("company", ""),
         "source_kind": "remoteok",
@@ -111,6 +112,10 @@ def _normalize(job: dict, fetched_at: str) -> dict:
         "location": job.get("location", ""),
         "posted_at": _posted_at(job),
         "fetched_at": fetched_at,
+        "remoteok_description": job.get("description", ""),
+        "remoteok_tags": json.dumps(tags if isinstance(tags, list) else []),
+        "remoteok_slug": job.get("slug", ""),
+        "remoteok_apply_url": job.get("apply_url", ""),
         "raw_json": json.dumps(job, sort_keys=True),
     }
 
