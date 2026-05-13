@@ -4,7 +4,8 @@ For sources that publish open roles directly on a careers / job-board
 HTML page with a stable structure but no API. Parser strategies:
 
 - `gusto_board`: server-rendered Gusto job-board page
-  (used by Regrid).
+  (kept for Gusto boards; Regrid is currently inactive because its board returns
+  403 to the scheduled runner).
 - `felt_careers`: Felt's hand-maintained Webflow careers page.
 - `wherobots_careers`: Wherobots WordPress careers page with
   `<li class="job-item">` blocks.
@@ -73,14 +74,6 @@ class SiteSpec(NamedTuple):
 
 
 DEFAULT_SITES: tuple[SiteSpec, ...] = (
-    SiteSpec(
-        slug="regrid",
-        url=(
-            "https://jobs.gusto.com/boards/"
-            "regrid-map-your-future-c265c805-0902-4628-bd27-d013fdcfb5bc"
-        ),
-        parser_kind="gusto_board",
-    ),
     SiteSpec(
         slug="felt",
         url="https://felt.com/careers",
@@ -202,8 +195,13 @@ def site_resource(spec: SiteSpec):
     @dlt.resource(name=spec.slug, write_disposition="append")
     def _resource() -> Iterator[dict]:
         fetched_at = datetime.now(UTC).isoformat()
-        html = _fetch_page(spec.url)
-        roles = _parse(spec, html)
+        try:
+            html = _fetch_page(spec.url)
+            roles = _parse(spec, html)
+        except (requests.RequestException, ValueError) as exc:
+            print(f"[page:{spec.slug}] fetch/parse failed; skip site: {exc}")
+            return
+
         print(f"[page:{spec.slug}] parsed {len(roles)} role(s) from page")
         for role in roles:
             matched = _title_matches(role["title"])

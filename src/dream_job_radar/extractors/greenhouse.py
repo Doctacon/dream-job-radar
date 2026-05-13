@@ -20,10 +20,11 @@ TITLE_KEYWORDS = ("data", "engineer", "gis", "geospatial")
 DEFAULT_BOARDS = (
     "onxmaps",
     "planetlabs",
-    "floodbase",
     "blastpoint",
     "overstory",
 )
+# Floodbase's public Greenhouse board currently returns 404; re-add after the
+# board URL is confirmed live again.
 
 
 def _title_matches(title: str) -> bool:
@@ -64,7 +65,13 @@ def board_resource(slug: str):
     @dlt.resource(name=slug, write_disposition="append")
     def _resource() -> Iterator[dict]:
         fetched_at = datetime.now(UTC).isoformat()
-        for job in _fetch_jobs(slug):
+        try:
+            jobs = _fetch_jobs(slug)
+        except requests.RequestException as exc:
+            print(f"[greenhouse:{slug}] fetch failed; skip board: {exc}")
+            return
+
+        for job in jobs:
             if not _title_matches(job.get("title", "")):
                 continue
             yield _normalize(job, slug, fetched_at)
