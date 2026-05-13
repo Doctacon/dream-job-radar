@@ -80,6 +80,22 @@ when a previously-observed slug went stale):
 uv run python scripts/health_check.py
 ```
 
+## Dream Job Radar Dive
+
+The public Dive is an inventory-first radar over
+`"acorn-granary"."main"."current_open_roles"`.
+
+- Primary KPIs count all current matching open roles, companies, and locations.
+- Daily snapshot history comes from
+  `"acorn-granary"."mart"."job_postings_daily_snapshot"` and tracks the full
+  current matching open-role inventory once per UTC day.
+- The recent lens is separate: it counts and lists roles whose `posted_at`, or
+  fallback `first_seen_at`, is within the last 7 days.
+
+Do not describe the whole Dive as "last 7 days" unless the query is scoped to the
+recent lens. Inventory metrics and snapshot history are broader current-open-role
+counts.
+
 Then in MotherDuck:
 
 ```sql
