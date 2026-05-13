@@ -81,3 +81,54 @@ QUALIFY ROW_NUMBER() OVER (
     PARTITION BY source_kind, ats_slug, role_id
     ORDER BY fetched_at DESC
 ) = 1;
+
+-- relevant_open_roles: personalized high-precision role surface.
+-- Keeps current_open_roles as full inventory while normal user-facing
+-- displays can hide roles outside the operator's location constraints.
+CREATE OR REPLACE VIEW relevant_open_roles AS
+WITH classified AS (
+    SELECT
+        *,
+        lower(coalesce(location, '')) AS location_lc
+    FROM current_open_roles
+)
+SELECT
+    company,
+    source_kind,
+    ats_slug,
+    role_id,
+    title,
+    url,
+    location,
+    posted_at,
+    fetched_at,
+    first_seen_at,
+    last_seen_at
+FROM classified
+WHERE
+    (
+        -- Explicit remote US/worldwide only. Vague "Remote" stays out.
+        location_lc LIKE '%remote%'
+        AND (
+            location_lc LIKE '%united states%'
+            OR regexp_matches(location_lc, '(^|[^a-z0-9])u\.?s\.?([^a-z0-9]|$)')
+            OR regexp_matches(location_lc, '(^|[^a-z0-9])u\.?s\.?a\.?([^a-z0-9]|$)')
+            OR location_lc LIKE '%worldwide%'
+            OR location_lc LIKE '%global%'
+        )
+    )
+    OR (
+        -- Explicit Arizona-local roles.
+        location_lc LIKE '%arizona%'
+        OR regexp_matches(location_lc, '(^|[^a-z0-9])az([^a-z0-9]|$)')
+        OR location_lc LIKE '%phoenix%'
+        OR location_lc LIKE '%tucson%'
+        OR location_lc LIKE '%tempe%'
+        OR location_lc LIKE '%scottsdale%'
+        OR location_lc LIKE '%mesa%'
+        OR location_lc LIKE '%chandler%'
+        OR location_lc LIKE '%gilbert%'
+        OR location_lc LIKE '%glendale%'
+        OR location_lc LIKE '%peoria%'
+        OR location_lc LIKE '%flagstaff%'
+    );

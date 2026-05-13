@@ -15,7 +15,8 @@ export const REQUIRED_DATABASES = [
 
 const N = (v: unknown): number => (v != null ? Number(v) : 0);
 
-const TABLE = `"acorn-granary"."main"."current_open_roles"`;
+const RELEVANT_TABLE = `"acorn-granary"."main"."relevant_open_roles"`;
+const INVENTORY_TABLE = `"acorn-granary"."main"."current_open_roles"`;
 const MART_TABLE = `"acorn-granary"."mart"."job_postings_daily_snapshot"`;
 const RECENT_FILTER = "coalesce(posted_at, first_seen_at) >= current_date - INTERVAL 6 DAY";
 
@@ -39,14 +40,14 @@ export default function DreamJobRadar() {
       count(DISTINCT company) AS companies,
       count(DISTINCT location) AS locations,
       strftime(max(last_seen_at), '%Y-%m-%d %H:%M UTC') AS last_refresh
-    FROM ${TABLE}
+    FROM ${RELEVANT_TABLE}
   `);
 
   const recent = useSQLQuery(`
     SELECT
       count(*) AS recent_roles,
       count(DISTINCT company) AS recent_companies
-    FROM ${TABLE}
+    FROM ${RELEVANT_TABLE}
     WHERE ${RECENT_FILTER}
   `);
 
@@ -64,7 +65,7 @@ export default function DreamJobRadar() {
       company,
       count(*) AS roles,
       count(*) FILTER (WHERE ${RECENT_FILTER}) AS recent_roles
-    FROM ${TABLE}
+    FROM ${RELEVANT_TABLE}
     GROUP BY company
     ORDER BY roles DESC, company
     LIMIT 8
@@ -75,7 +76,7 @@ export default function DreamJobRadar() {
       source_kind,
       count(*) AS roles,
       count(DISTINCT company) AS companies
-    FROM ${TABLE}
+    FROM ${RELEVANT_TABLE}
     GROUP BY source_kind
     ORDER BY roles DESC, source_kind
   `);
@@ -83,6 +84,7 @@ export default function DreamJobRadar() {
   const roles = useSQLQuery(`
     SELECT
       company,
+      source_kind,
       title,
       coalesce(location, '—') AS location,
       coalesce(
@@ -90,7 +92,7 @@ export default function DreamJobRadar() {
         strftime(first_seen_at, '%Y-%m-%d')
       ) AS role_date,
       url
-    FROM ${TABLE}
+    FROM ${RELEVANT_TABLE}
     WHERE ${RECENT_FILTER}
     ORDER BY coalesce(posted_at, first_seen_at) DESC NULLS LAST, company, title
     LIMIT 10
@@ -116,16 +118,16 @@ export default function DreamJobRadar() {
       <div style={{ maxWidth: 980, margin: "0 auto" }}>
         <header className="mb-6">
           <p className="text-xs font-semibold uppercase tracking-wide mb-2" style={{ color: T.accent }}>
-            Current inventory radar
+            Personalized opportunity radar
           </p>
           <h1 className="text-2xl sm:text-4xl font-bold tracking-tight" style={{ color: T.text }}>
             Dream Job Radar
           </h1>
           <p className="text-sm mt-3" style={{ color: T.muted, lineHeight: 1.6 }}>
-            Current matching open roles across hand-picked outdoor, geospatial, and
-            mission-aligned companies. The inventory metrics count all currently open
-            matching roles; the recent lens separately shows roles posted or first observed
-            in the last 7 days.
+            Location-relevant open roles across hand-picked outdoor, geospatial, and
+            mission-aligned companies. The primary metrics use the personalized relevance
+            view: explicit remote US/worldwide roles and explicit Arizona-local roles.
+            Full inventory remains available separately for debugging.
             {inventoryRow.last_refresh ? (
               <>
                 {" "}Last refresh:{" "}
@@ -139,39 +141,40 @@ export default function DreamJobRadar() {
         </header>
 
         <section className="grid grid-cols-2 sm:grid-cols-4 gap-5 sm:gap-8 mb-8">
-          <KPI loading={inventory.isLoading} value={N(inventoryRow.total_roles)} label="Open-role inventory" />
+          <KPI loading={inventory.isLoading} value={N(inventoryRow.total_roles)} label="Relevant open roles" />
           <KPI loading={inventory.isLoading} value={N(inventoryRow.companies)} label="Companies covered" />
           <KPI loading={inventory.isLoading} value={N(inventoryRow.locations)} label="Locations" />
           <KPI loading={recent.isLoading} value={N(recentRow.recent_roles)} label="New/recent this week" tone="warm" />
         </section>
 
         <section className="mb-8">
-          <SectionTitle eyebrow="Inventory history" title="Daily UTC snapshots" />
+          <SectionTitle eyebrow="Full inventory history" title="Daily UTC snapshots" />
           <p className="text-sm mb-3" style={{ color: T.muted, lineHeight: 1.6 }}>
-            Each point is the full current matching open-role inventory captured once per UTC day
-            in the Iceberg mart, not the last-7-day recent-role count.
+            Each point is the full current matching open-role inventory from {INVENTORY_TABLE},
+            captured once per UTC day in the Iceberg mart. It is intentionally broader than
+            the personalized relevant-role counts above.
           </p>
           <SnapshotTrend rows={snapshotRows} loading={snapshots.isLoading} />
         </section>
 
         <section className="grid grid-cols-1 lg:grid-cols-5 gap-6 mb-8">
           <div className="lg:col-span-3">
-            <SectionTitle eyebrow="Coverage" title="Companies with current matches" />
+            <SectionTitle eyebrow="Relevant coverage" title="Companies with relevant matches" />
             <CompanyTable rows={companyRows} loading={companyCoverage.isLoading} />
           </div>
           <div className="lg:col-span-2">
-            <SectionTitle eyebrow="Source mix" title="ATS coverage" />
+            <SectionTitle eyebrow="Relevant source mix" title="Source coverage" />
             <SourceList rows={sourceRows} loading={sourceCoverage.isLoading} />
           </div>
         </section>
 
         <section>
-          <SectionTitle eyebrow="Recent lens" title="Roles posted or first observed in the last 7 days" />
+          <SectionTitle eyebrow="Recent relevant lens" title="Relevant roles posted or first observed in the last 7 days" />
           <RecentRoles rows={roleRows} loading={roles.isLoading} />
         </section>
 
         <p className="text-xs mt-8" style={{ color: T.faint, lineHeight: 1.7 }}>
-          Source: dream-job-radar pipeline to Cloudflare R2, MotherDuck view{" "}
+          Source: dream-job-radar pipeline to Cloudflare R2, MotherDuck relevance view{" "}
           <code
             style={{
               color: T.muted,
@@ -181,9 +184,19 @@ export default function DreamJobRadar() {
               fontFamily: "ui-monospace, SFMono-Regular, Menlo, monospace",
             }}
           >
-            current_open_roles
+            relevant_open_roles
           </code>
-          , and Iceberg mart table{" "}
+          , full-inventory view <code
+            style={{
+              color: T.muted,
+              background: T.borderFaint,
+              padding: "1px 6px",
+              borderRadius: 4,
+              fontFamily: "ui-monospace, SFMono-Regular, Menlo, monospace",
+            }}
+          >
+            current_open_roles
+          </code>, and Iceberg mart table{" "}
           <code
             style={{
               color: T.muted,
@@ -282,7 +295,7 @@ function CompanyTable({ rows, loading }: { rows: Array<Record<string, unknown>>;
   }
 
   if (rows.length === 0) {
-    return <EmptyText>No companies currently have matching open roles.</EmptyText>;
+    return <EmptyText>No companies currently have relevant open roles.</EmptyText>;
   }
 
   return (
@@ -290,7 +303,7 @@ function CompanyTable({ rows, loading }: { rows: Array<Record<string, unknown>>;
       <thead>
         <tr style={{ borderBottom: `1px solid ${T.borderSoft}` }}>
           <Th>Company</Th>
-          <Th align="right">Inventory</Th>
+          <Th align="right">Relevant</Th>
           <Th align="right">Recent</Th>
         </tr>
       </thead>
@@ -317,7 +330,7 @@ function SourceList({ rows, loading }: { rows: Array<Record<string, unknown>>; l
   }
 
   if (rows.length === 0) {
-    return <EmptyText>No source coverage is available.</EmptyText>;
+    return <EmptyText>No relevant source coverage is available.</EmptyText>;
   }
 
   const max = Math.max(1, ...rows.map((row) => N(row.roles)));
@@ -350,7 +363,7 @@ function RecentRoles({ rows, loading }: { rows: Array<Record<string, unknown>>; 
   }
 
   if (rows.length === 0) {
-    return <EmptyText>No roles were posted or first observed in the last 7 days.</EmptyText>;
+    return <EmptyText>No relevant roles were posted or first observed in the last 7 days.</EmptyText>;
   }
 
   return (
@@ -358,6 +371,7 @@ function RecentRoles({ rows, loading }: { rows: Array<Record<string, unknown>>; 
       <thead>
         <tr style={{ borderBottom: `1px solid ${T.borderSoft}` }}>
           <Th>Company</Th>
+          <Th hideOnMobile>Source</Th>
           <Th>Title</Th>
           <Th hideOnMobile>Location</Th>
           <Th>Date</Th>
@@ -371,6 +385,9 @@ function RecentRoles({ rows, loading }: { rows: Array<Record<string, unknown>>; 
             <tr key={`${url}-${i}`} style={{ borderBottom: `1px solid ${T.borderFaint}`, verticalAlign: "top" }}>
               <td className="py-3 pr-4 whitespace-nowrap" style={{ color: T.muted }}>
                 {String(row.company ?? "")}
+              </td>
+              <td className="py-3 pr-4 hidden sm:table-cell" style={{ color: T.faint }}>
+                {String(row.source_kind ?? "")}
               </td>
               <td className="py-3 pr-4">
                 {url ? (
@@ -388,7 +405,7 @@ function RecentRoles({ rows, loading }: { rows: Array<Record<string, unknown>>; 
                   <span>{title}</span>
                 )}
                 <div className="text-xs mt-1 sm:hidden" style={{ color: T.faint }}>
-                  {String(row.location ?? "")}
+                  {String(row.source_kind ?? "")} - {String(row.location ?? "")}
                 </div>
               </td>
               <td className="py-3 pr-4 hidden sm:table-cell" style={{ color: T.faint }}>

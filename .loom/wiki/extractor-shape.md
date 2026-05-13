@@ -51,6 +51,7 @@ source kind:
 | sitemap monitor | `sitemap`    |
 | Rippling        | `rippling`   |
 | Polymer         | `polymer`    |
+| RemoteOK        | `remoteok`   |
 
 The dlt filesystem destination uses
 `bucket_url = s3://<R2_BUCKET>/raw` (no source-kind segment) and the

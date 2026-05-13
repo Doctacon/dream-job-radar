@@ -2,8 +2,8 @@
 
 Pipeline that extracts open roles from a curated set of public job
 boards, filters to data/engineering/GIS/geospatial titles, writes
-Parquet to Cloudflare R2, and exposes a stable `current_open_roles`
-view in MotherDuck.
+Parquet to Cloudflare R2, and exposes stable MotherDuck views for full
+inventory and personally relevant roles.
 
 Source kinds and ATS slugs covered today:
 
@@ -22,6 +22,7 @@ Source kinds and ATS slugs covered today:
 | `page`       | `wherobots`  | https://wherobots.com/careers/ (WordPress; `<li class="job-item">`)   |
 | `rippling`   | `kalkomey`   | https://api.rippling.com/platform/api/ats/v1/board/kalkomey/jobs      |
 | `polymer`    | `upstream-tech` | https://www.upstream.tech/careers (index) → https://jobs.upstream.tech/{id} (per-role JSON-LD) |
+| `remoteok`   | `remoteok`   | https://remoteok.com/api (strict technical discovery source)           |
 
 ## Run the pipeline
 
@@ -59,9 +60,13 @@ uv run python -m dream_job_radar.pipelines.rippling
 # Parent careers page enumerates role IDs; per-role JSON-LD on
 # jobs.<company>.<tld> subdomain.
 uv run python -m dream_job_radar.pipelines.polymer
+
+# RemoteOK discovery slice → s3://$R2_BUCKET/raw/remoteok/remoteok/
+# Public RemoteOK API; strict technical title/seniority filter before raw write.
+uv run python -m dream_job_radar.pipelines.remoteok
 ```
 
-Run all sources sequentially (Greenhouse → Ashby → sitemap → page → rippling → polymer):
+Run all sources sequentially (Greenhouse → Ashby → sitemap → page → rippling → polymer → RemoteOK):
 
 ```bash
 uv run python -m dream_job_radar.pipelines.radar
@@ -82,24 +87,32 @@ uv run python scripts/health_check.py
 
 ## Dream Job Radar Dive
 
-The public Dive is an inventory-first radar over
-`"acorn-granary"."main"."current_open_roles"`.
+The public Dive is a relevance-first radar over
+`"acorn-granary"."main"."relevant_open_roles"`.
 
-- Primary KPIs count all current matching open roles, companies, and locations.
+- `current_open_roles` remains the full matching open-role inventory for recovery,
+  debugging, and snapshot history.
+- `relevant_open_roles` is the normal user-facing surface. It includes explicit
+  remote US/worldwide roles and explicit Arizona-local roles, and excludes vague
+  remote, non-US remote, and non-Arizona onsite/hybrid roles.
+- Primary KPIs count current relevant open roles, companies, and locations.
 - Daily snapshot history comes from
   `"acorn-granary"."mart"."job_postings_daily_snapshot"` and tracks the full
   current matching open-role inventory once per UTC day.
 - The recent lens is separate: it counts and lists roles whose `posted_at`, or
-  fallback `first_seen_at`, is within the last 7 days.
+  fallback `first_seen_at`, is within the last 7 days and pass the relevance view.
 
 Do not describe the whole Dive as "last 7 days" unless the query is scoped to the
-recent lens. Inventory metrics and snapshot history are broader current-open-role
-counts.
+recent lens. Also do not describe `current_open_roles` as personalized; it is full
+inventory, while `relevant_open_roles` is the location-relevant surface.
 
 Then in MotherDuck:
 
 ```sql
 SELECT source_kind, ats_slug, count(*) FROM current_open_roles
+GROUP BY 1, 2 ORDER BY 1, 2;
+
+SELECT source_kind, ats_slug, count(*) FROM relevant_open_roles
 GROUP BY 1, 2 ORDER BY 1, 2;
 
 SELECT title, location FROM current_open_roles

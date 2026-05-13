@@ -1,7 +1,7 @@
 """Run all dream-job-radar slices.
 
-Runs the Greenhouse pipeline followed by every other source kind
-(currently Ashby, sitemap, page). Each source kind is its own dlt
+Runs the Greenhouse pipeline followed by every other source kind.
+Each source kind is its own dlt
 pipeline with `dataset_name = <source_kind>` so the observable R2
 layout is `raw/<source_kind>/<ats_slug>/...` per
 `wiki:extractor-shape`.
@@ -13,6 +13,9 @@ Wave 3 wires GitHub Actions cron):
     uv run python -m dream_job_radar.pipelines.ashby
     uv run python -m dream_job_radar.pipelines.sitemap
     uv run python -m dream_job_radar.pipelines.page
+    uv run python -m dream_job_radar.pipelines.rippling
+    uv run python -m dream_job_radar.pipelines.polymer
+    uv run python -m dream_job_radar.pipelines.remoteok
 
 Run all sources sequentially:
 
@@ -27,6 +30,7 @@ from dream_job_radar.pipelines import ashby as ashby_pipeline
 from dream_job_radar.pipelines import greenhouse as greenhouse_pipeline
 from dream_job_radar.pipelines import page as page_pipeline
 from dream_job_radar.pipelines import polymer as polymer_pipeline
+from dream_job_radar.pipelines import remoteok as remoteok_pipeline
 from dream_job_radar.pipelines import rippling as rippling_pipeline
 from dream_job_radar.pipelines import sitemap as sitemap_pipeline
 
@@ -56,6 +60,13 @@ def run_all() -> None:
     print("[radar] running polymer pipeline")
     print("=" * 72)
     polymer_pipeline.run()
+    print("=" * 72)
+    print("[radar] running remoteok pipeline")
+    print("=" * 72)
+    try:
+        remoteok_pipeline.run()
+    except Exception as exc:
+        print(f"[radar] remoteok pipeline failed; continuing: {exc}")
 
 
 def main() -> None:
