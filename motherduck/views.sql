@@ -98,7 +98,10 @@ WITH broad_context AS (
             coalesce(CAST(json_extract(raw_json, '$.tags') AS VARCHAR), ''),
             coalesce(json_extract_string(raw_json, '$.company_blurb'), ''),
             coalesce(CAST(json_extract(raw_json, '$.impact_areas') AS VARCHAR), ''),
-            coalesce(json_extract_string(raw_json, '$.job_function'), '')
+            coalesce(json_extract_string(raw_json, '$.job_function'), ''),
+            coalesce(json_extract_string(raw_json, '$.pathway'), ''),
+            coalesce(json_extract_string(raw_json, '$.position_type'), ''),
+            coalesce(json_extract_string(raw_json, '$.workplace'), '')
         )) AS source_domain_text_lc
     FROM read_parquet(
         'r2://${R2_BUCKET}/raw/*/*/**/*.parquet',
@@ -107,7 +110,7 @@ WITH broad_context AS (
         hive_partitioning = true
     )
     WHERE filename NOT LIKE '%/_dlt_%'
-      AND source_kind IN ('remoteok', 'techjobsforgood', 'gjc')
+      AND source_kind IN ('remoteok', 'techjobsforgood', 'gjc', 'greenjobsboard')
       AND ats_slug IS NOT NULL
       AND role_id IS NOT NULL
       AND make_date(year, CAST(month AS INTEGER), CAST(day AS INTEGER))
@@ -211,7 +214,7 @@ WHERE
     )
     AND (
         -- Curated company-board sources are already operator-approved.
-        source_kind NOT IN ('remoteok', 'techjobsforgood')
+        source_kind NOT IN ('remoteok', 'techjobsforgood', 'gjc', 'greenjobsboard')
         OR company_domain_decision = 'approved'
         OR (
             company_domain_decision IS NULL

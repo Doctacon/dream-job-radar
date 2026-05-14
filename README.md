@@ -25,6 +25,7 @@ Source kinds and ATS slugs covered today:
 | `remoteok`   | `remoteok`   | https://remoteok.com/api (broad discovery, company-domain gated)         |
 | `techjobsforgood` | `jobs` | https://www.techjobsforgood.com/jobs/ (public visible mission-specific listings) |
 | `gjc`        | `rss`        | https://www.gjc.org/cgi-bin/rssjobs.pl (public GIS Jobs Clearinghouse RSS) |
+| `greenjobsboard` | `jobs` | https://www.greenjobsboard.us/jobboard/explore-jobs (public visible green jobs listings) |
 
 ## Run the pipeline
 
@@ -76,9 +77,13 @@ uv run python -m dream_job_radar.pipelines.techjobsforgood
 # GIS Jobs Clearinghouse slice → s3://$R2_BUCKET/raw/gjc/rss/
 # Public RSS feed; company/location are parsed conservatively from RSS descriptions.
 uv run python -m dream_job_radar.pipelines.gjc
+
+# Green Jobs Board slice → s3://$R2_BUCKET/raw/greenjobsboard/jobs/
+# Public visible listing/detail pages with very strict technical title filtering.
+uv run python -m dream_job_radar.pipelines.greenjobsboard
 ```
 
-Run all sources sequentially (Greenhouse → Ashby → sitemap → page → rippling → polymer → RemoteOK → Tech Jobs for Good → GJC locally):
+Run all sources sequentially (Greenhouse → Ashby → sitemap → page → rippling → polymer → RemoteOK → Tech Jobs for Good → GJC → Green Jobs Board locally):
 
 ```bash
 uv run python -m dream_job_radar.pipelines.radar
@@ -114,7 +119,7 @@ The public Dive is a relevance-first radar over
   roles unless the location explicitly names a non-US/non-worldwide remote
   region, plus explicit Arizona-local roles; non-Arizona onsite/hybrid roles stay
   out.
-- Broad-discovery sources such as RemoteOK, Tech Jobs for Good, and GJC must also pass company/domain review
+- Broad-discovery sources such as RemoteOK, Tech Jobs for Good, GJC, and Green Jobs Board must also pass company/domain review
   or deterministic mission-fit rules before they appear in `relevant_open_roles`.
   Unknown, pending, or rejected broad-discovery companies remain available in
   `current_open_roles` for review/debugging but are hidden from the Dive.

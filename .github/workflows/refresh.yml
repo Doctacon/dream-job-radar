@@ -79,6 +79,11 @@ jobs:
         continue-on-error: true
         run: uv run python -m dream_job_radar.pipelines.gjc
 
+      - name: Green Jobs Board pipeline
+        id: greenjobsboard
+        continue-on-error: true
+        run: uv run python -m dream_job_radar.pipelines.greenjobsboard
+
       - name: Apply MotherDuck views
         if: always()
         run: |

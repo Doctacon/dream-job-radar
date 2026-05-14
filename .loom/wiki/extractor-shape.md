@@ -54,6 +54,7 @@ source kind:
 | RemoteOK        | `remoteok`   |
 | Tech Jobs for Good | `techjobsforgood` |
 | GIS Jobs Clearinghouse | `gjc` |
+| Green Jobs Board | `greenjobsboard` |
 
 The dlt filesystem destination uses
 `bucket_url = s3://<R2_BUCKET>/raw` (no source-kind segment) and the

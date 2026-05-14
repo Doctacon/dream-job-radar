@@ -11,6 +11,7 @@ Wave 3 wires GitHub Actions cron):
 
     uv run python -m dream_job_radar.pipelines.greenhouse
     uv run python -m dream_job_radar.pipelines.gjc
+    uv run python -m dream_job_radar.pipelines.greenjobsboard
     uv run python -m dream_job_radar.pipelines.ashby
     uv run python -m dream_job_radar.pipelines.sitemap
     uv run python -m dream_job_radar.pipelines.page
@@ -30,6 +31,7 @@ from dotenv import load_dotenv
 
 from dream_job_radar.pipelines import ashby as ashby_pipeline
 from dream_job_radar.pipelines import gjc as gjc_pipeline
+from dream_job_radar.pipelines import greenjobsboard as greenjobsboard_pipeline
 from dream_job_radar.pipelines import greenhouse as greenhouse_pipeline
 from dream_job_radar.pipelines import page as page_pipeline
 from dream_job_radar.pipelines import polymer as polymer_pipeline
@@ -78,6 +80,13 @@ def run_all() -> None:
         gjc_pipeline.run()
     except Exception as exc:
         print(f"[radar] gjc pipeline failed; continuing: {exc}")
+    print("=" * 72)
+    print("[radar] running greenjobsboard pipeline")
+    print("=" * 72)
+    try:
+        greenjobsboard_pipeline.run()
+    except Exception as exc:
+        print(f"[radar] greenjobsboard pipeline failed; continuing: {exc}")
     print("=" * 72)
     print("[radar] running techjobsforgood pipeline")
     print("=" * 72)
