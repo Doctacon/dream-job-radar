@@ -2,7 +2,7 @@
 
 ID: plan:20260513-80000hours-public-algolia-mvp
 Type: Plan
-Status: open
+Status: completed
 Created: 2026-05-13
 Updated: 2026-05-13
 Risk: medium - uses a public browser search endpoint that is technically accessible but non-contractual and terms-sensitive
@@ -83,8 +83,9 @@ Child tickets: ticket:20260513-80000hours-domain-gate, ticket:20260513-80000hour
 
 ## Current State
 
-Plan is open and ready for child ticket execution. Operator decisions are recorded: public Algolia is acceptable only as best-effort/non-contractual access; store minimal metadata; apply broad-source gating; use daily narrow fetch; use a narrow MVP plan.
+Completed. 80,000 Hours is implemented as a best-effort public Algolia source with minimal metadata, strict title filtering, broad-source relevance gating, local/scheduled refresh integration, and existing Dive validation. Final validation showed `106` current rows and `20` relevant rows. A first-run `gis` substring false-positive issue was corrected and quarantined in the view until the initial raw files age out.
 
 ## Journal
 
 - 2026-05-13: Created plan from operator selections after feasibility research: best-effort public Algolia, minimal metadata, broad-source gated relevance, daily narrow fetch, and narrow MVP ticket set.
+- 2026-05-13: Executed and closed source contract, extractor, domain gate, pipeline integration, and Dive validation tickets. Evidence recorded in `evidence:20260513-80000hours-mvp-validation`.

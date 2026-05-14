@@ -2,7 +2,7 @@
 
 ID: ticket:20260513-80000hours-pipeline-integration
 Type: Ticket
-Status: open
+Status: closed
 Created: 2026-05-13
 Updated: 2026-05-13
 Risk: low - source should be isolated from existing refresh
@@ -34,8 +34,11 @@ May edit runner, workflow, README, wiki, and Loom records. Must keep source fail
 
 ## Current State
 
-Ready after the domain gate ticket closes.
+Closed. 80,000 Hours is wired into `radar.py` and `.github/workflows/refresh.yml` with failure isolation, README/wiki documentation is updated, views applied, counts checked, and health passed. Evidence is recorded in `evidence:20260513-80000hours-mvp-validation`. Separate audit was not run because acceptance is supported by full refresh output, count queries, and health check.
 
 ## Journal
 
 - 2026-05-13: Created ticket with Status `open`.
+- 2026-05-13: Wired 80,000 Hours into local all-source runner and scheduled workflow with `continue-on-error` isolation.
+- 2026-05-13: Updated README and extractor-shape wiki.
+- 2026-05-13: Full refresh, view application, count query, and health check passed; closed ticket.

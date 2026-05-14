@@ -10,6 +10,7 @@ Per-source entry points (cleaner per-source error isolation when
 Wave 3 wires GitHub Actions cron):
 
     uv run python -m dream_job_radar.pipelines.greenhouse
+    uv run python -m dream_job_radar.pipelines.eightythousandhours
     uv run python -m dream_job_radar.pipelines.gjc
     uv run python -m dream_job_radar.pipelines.greenjobsboard
     uv run python -m dream_job_radar.pipelines.ashby
@@ -30,6 +31,7 @@ from __future__ import annotations
 from dotenv import load_dotenv
 
 from dream_job_radar.pipelines import ashby as ashby_pipeline
+from dream_job_radar.pipelines import eightythousandhours as eightythousandhours_pipeline
 from dream_job_radar.pipelines import gjc as gjc_pipeline
 from dream_job_radar.pipelines import greenjobsboard as greenjobsboard_pipeline
 from dream_job_radar.pipelines import greenhouse as greenhouse_pipeline
@@ -73,6 +75,13 @@ def run_all() -> None:
         remoteok_pipeline.run()
     except Exception as exc:
         print(f"[radar] remoteok pipeline failed; continuing: {exc}")
+    print("=" * 72)
+    print("[radar] running eightythousandhours pipeline")
+    print("=" * 72)
+    try:
+        eightythousandhours_pipeline.run()
+    except Exception as exc:
+        print(f"[radar] eightythousandhours pipeline failed; continuing: {exc}")
     print("=" * 72)
     print("[radar] running gjc pipeline")
     print("=" * 72)

@@ -2,7 +2,7 @@
 
 ID: ticket:20260513-80000hours-mvp-extractor
 Type: Ticket
-Status: open
+Status: closed
 Created: 2026-05-13
 Updated: 2026-05-13
 Risk: medium - public Algolia schema, index names, and browser key can change without notice
@@ -35,8 +35,11 @@ Likely source identifiers: source kind `eightythousandhours`, slug `jobs`, R2 pa
 
 ## Current State
 
-Ready after the source contract closes. First implementation move should inspect existing broad-source extractor shapes before adding the smallest matching adapter.
+Closed. Added `src/dream_job_radar/extractors/eightythousandhours.py` and `src/dream_job_radar/pipelines/eightythousandhours.py`. The corrected extractor uses public Algolia search with narrow attributes, stores minimal metadata, omits full descriptions, and yielded `106` strict technical rows with no failed jobs. Evidence is recorded in `evidence:20260513-80000hours-mvp-validation`. Separate audit was not run because the ticket is supported by direct source-only validation and the false-positive filter issue was recorded and corrected.
 
 ## Journal
 
 - 2026-05-13: Created ticket with Status `open`.
+- 2026-05-13: Implemented 80,000 Hours public Algolia extractor and pipeline.
+- 2026-05-13: Initial validation exposed an over-broad `gis` substring matcher; tightened matcher to word-boundary `GIS` and excluded false-positive title patterns.
+- 2026-05-13: Source-only validation loaded 106 corrected strict technical rows with no failed jobs; closed ticket.

@@ -48,6 +48,18 @@ WITH raw AS (
       AND source_kind IS NOT NULL
       AND ats_slug IS NOT NULL
       AND role_id IS NOT NULL
+      -- 80,000 Hours had one initial run with an over-broad `gis`
+      -- substring matcher. Quarantine those false-positive raw rows from
+      -- current inventory; corrected extractor runs no longer yield them.
+      AND NOT (
+          source_kind = 'eightythousandhours'
+          AND (
+              lower(title) LIKE '%strategist%'
+              OR lower(title) LIKE '%biologist%'
+              OR lower(title) LIKE '%legislative%'
+              OR lower(title) LIKE '%volunteer%'
+          )
+      )
       -- Bound the scan to the last 30 days of partitions
       -- (initiative:bound-view-window). Hive partition columns
       -- arrive as year=INT, month/day=zero-padded VARCHAR.
@@ -101,7 +113,11 @@ WITH broad_context AS (
             coalesce(json_extract_string(raw_json, '$.job_function'), ''),
             coalesce(json_extract_string(raw_json, '$.pathway'), ''),
             coalesce(json_extract_string(raw_json, '$.position_type'), ''),
-            coalesce(json_extract_string(raw_json, '$.workplace'), '')
+            coalesce(json_extract_string(raw_json, '$.workplace'), ''),
+            coalesce(CAST(json_extract(raw_json, '$.tags_area') AS VARCHAR), ''),
+            coalesce(CAST(json_extract(raw_json, '$.tags_skill') AS VARCHAR), ''),
+            coalesce(CAST(json_extract(raw_json, '$.tags_generic') AS VARCHAR), ''),
+            coalesce(json_extract_string(raw_json, '$.description_short'), '')
         )) AS source_domain_text_lc
     FROM read_parquet(
         'r2://${R2_BUCKET}/raw/*/*/**/*.parquet',
@@ -110,7 +126,7 @@ WITH broad_context AS (
         hive_partitioning = true
     )
     WHERE filename NOT LIKE '%/_dlt_%'
-      AND source_kind IN ('remoteok', 'techjobsforgood', 'gjc', 'greenjobsboard')
+      AND source_kind IN ('remoteok', 'techjobsforgood', 'gjc', 'greenjobsboard', 'eightythousandhours')
       AND ats_slug IS NOT NULL
       AND role_id IS NOT NULL
       AND make_date(year, CAST(month AS INTEGER), CAST(day AS INTEGER))
@@ -214,7 +230,7 @@ WHERE
     )
     AND (
         -- Curated company-board sources are already operator-approved.
-        source_kind NOT IN ('remoteok', 'techjobsforgood', 'gjc', 'greenjobsboard')
+        source_kind NOT IN ('remoteok', 'techjobsforgood', 'gjc', 'greenjobsboard', 'eightythousandhours')
         OR company_domain_decision = 'approved'
         OR (
             company_domain_decision IS NULL
@@ -239,6 +255,11 @@ WHERE
                 OR domain_text_lc LIKE '%public benefit%'
                 OR domain_text_lc LIKE '%transit%'
                 OR domain_text_lc LIKE '%mobility%'
+                OR domain_text_lc LIKE '%ai safety%'
+                OR domain_text_lc LIKE '%biosecurity%'
+                OR domain_text_lc LIKE '%global health%'
+                OR domain_text_lc LIKE '%animal welfare%'
+                OR domain_text_lc LIKE '%catastrophic risk%'
             )
             AND NOT (
                 domain_text_lc LIKE '%healthcare%'

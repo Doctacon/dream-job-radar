@@ -2,7 +2,7 @@
 
 ID: ticket:20260513-80000hours-source-contract
 Type: Ticket
-Status: open
+Status: closed
 Created: 2026-05-13
 Updated: 2026-05-13
 Risk: medium - source access is public but non-contractual and content reuse must stay conservative
@@ -32,8 +32,22 @@ May update this ticket and related Loom records. Must not edit source code, SQL,
 
 ## Current State
 
-Ready to start. First move is to record the source contract in this ticket using the operator decisions and feasibility evidence, then close if all acceptance criteria are satisfied.
+Closed. 80,000 Hours source contract:
+
+- Source kind: `eightythousandhours`.
+- Source slug/table: `jobs`.
+- Allowed access: public Algolia browser search endpoint for the public jobs index only. No auth/session scraping, no login/app-user paths, no hidden/admin paths, no bypassing access controls, and no treating the public browser key as a project secret.
+- Default index posture: use the public super-ranked jobs index observed in feasibility research unless the public runtime config indicates a safe successor. If the index/key stops returning rows, block or replan instead of inventing a workaround.
+- Polling: at most the existing daily scheduled refresh by default. Use narrow `attributesToRetrieve`, bounded pagination, ordinary request timeouts, and no high-volume crawling.
+- Canonical fields: `company`, `source_kind`, `ats_slug`, `role_id`, `title`, `url`, `location`, `posted_at`, `fetched_at`, and `raw_json`.
+- Minimal source-specific fields allowed: company ID/name if distinct from canonical company, external/source URL, salary text, closing date, short description/snippet when needed for context, seniority/location tags, category/tag names, and other compact metadata useful for gating.
+- Disallowed by default: full descriptions, bulk content mirrors, authenticated recommendations, personalized app state, and hidden ranking/debug fields that are not needed for relevance.
+- Strict title filter: include software, data, analytics, GIS/geospatial, ML/AI engineering, platform, backend, infrastructure, DevOps/SRE, cloud, security, and technical analyst/architect titles. Exclude policy, campaigns, program, operations, fundraising/development, HR, legal, education, marketing, communications, sales, support, executive, intern, and non-technical roles.
+- Relevance behavior: treat as a broad-discovery source. Rows may enter `current_open_roles` after strict title filtering, but `relevant_open_roles` must also require location eligibility plus manual company/domain review or deterministic mission/domain signals from approved minimal metadata.
+
+Separate audit was not run because this ticket only records operator-approved source rules from prior feasibility evidence; implementation and validation tickets carry executable evidence.
 
 ## Journal
 
 - 2026-05-13: Created ticket with Status `open`.
+- 2026-05-13: Recorded public-search boundary, source identifiers, minimal field posture, title filter, polling limit, and broad-source relevance behavior; closed ticket.

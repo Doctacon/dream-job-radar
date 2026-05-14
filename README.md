@@ -23,6 +23,7 @@ Source kinds and ATS slugs covered today:
 | `rippling`   | `kalkomey`   | https://api.rippling.com/platform/api/ats/v1/board/kalkomey/jobs      |
 | `polymer`    | `upstream-tech` | https://www.upstream.tech/careers (index) → https://jobs.upstream.tech/{id} (per-role JSON-LD) |
 | `remoteok`   | `remoteok`   | https://remoteok.com/api (broad discovery, company-domain gated)         |
+| `eightythousandhours` | `jobs` | https://jobs.80000hours.org/ public Algolia search (broad discovery, minimal metadata, company-domain gated) |
 | `techjobsforgood` | `jobs` | https://www.techjobsforgood.com/jobs/ (public visible mission-specific listings) |
 | `gjc`        | `rss`        | https://www.gjc.org/cgi-bin/rssjobs.pl (public GIS Jobs Clearinghouse RSS) |
 | `greenjobsboard` | `jobs` | https://www.greenjobsboard.us/jobboard/explore-jobs (public visible green jobs listings) |
@@ -69,6 +70,11 @@ uv run python -m dream_job_radar.pipelines.polymer
 # User-facing visibility is gated by company-domain review/rules in relevant_open_roles.
 uv run python -m dream_job_radar.pipelines.remoteok
 
+# 80,000 Hours discovery slice → s3://$R2_BUCKET/raw/eightythousandhours/jobs/
+# Public Algolia browser search; strict technical title filter before raw write.
+# Stores minimal metadata only; user-facing visibility is broad-source gated.
+uv run python -m dream_job_radar.pipelines.eightythousandhours
+
 # Tech Jobs for Good discovery slice → s3://$R2_BUCKET/raw/techjobsforgood/jobs/
 # Public visible Software Engineering and Data + Analytics listings in approved
 # civic/climate/infrastructure impact areas. Premium/login-only results are out of scope.
@@ -83,7 +89,7 @@ uv run python -m dream_job_radar.pipelines.gjc
 uv run python -m dream_job_radar.pipelines.greenjobsboard
 ```
 
-Run all sources sequentially (Greenhouse → Ashby → sitemap → page → rippling → polymer → RemoteOK → Tech Jobs for Good → GJC → Green Jobs Board locally):
+Run all sources sequentially (Greenhouse → Ashby → sitemap → page → rippling → polymer → RemoteOK → 80,000 Hours → Tech Jobs for Good → GJC → Green Jobs Board locally):
 
 ```bash
 uv run python -m dream_job_radar.pipelines.radar
@@ -119,7 +125,7 @@ The public Dive is a relevance-first radar over
   roles unless the location explicitly names a non-US/non-worldwide remote
   region, plus explicit Arizona-local roles; non-Arizona onsite/hybrid roles stay
   out.
-- Broad-discovery sources such as RemoteOK, Tech Jobs for Good, GJC, and Green Jobs Board must also pass company/domain review
+- Broad-discovery sources such as RemoteOK, 80,000 Hours, Tech Jobs for Good, GJC, and Green Jobs Board must also pass company/domain review
   or deterministic mission-fit rules before they appear in `relevant_open_roles`.
   Unknown, pending, or rejected broad-discovery companies remain available in
   `current_open_roles` for review/debugging but are hidden from the Dive.

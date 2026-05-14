@@ -2,7 +2,7 @@
 
 ID: ticket:20260513-80000hours-dive-validation
 Type: Ticket
-Status: open
+Status: closed
 Created: 2026-05-13
 Updated: 2026-05-13
 Risk: low - existing Dive should consume rows through relevant_open_roles
@@ -32,8 +32,10 @@ May inspect or update Dive/README copy if needed. Must not share MotherDuck data
 
 ## Current State
 
-Ready after integration closes.
+Closed. The existing Dive path uses `relevant_open_roles` and `source_kind` provenance, so eligible 80,000 Hours rows flow through without a Dive publish. No MotherDuck data sharing was performed. Evidence is recorded in `evidence:20260513-80000hours-mvp-validation`. Separate audit was not run because no live Dive or sharing change was made.
 
 ## Journal
 
 - 2026-05-13: Created ticket with Status `open`.
+- 2026-05-13: Validated that the existing Dive path remains generic over `relevant_open_roles` and source provenance.
+- 2026-05-13: Closed without publishing the Dive because no copy/query change was needed and no MotherDuck data sharing was performed.
