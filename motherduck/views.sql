@@ -140,6 +140,7 @@ classified AS (
     SELECT
         c.*,
         lower(coalesce(c.location, '')) AS location_lc,
+        lower(coalesce(c.title, '')) AS title_lc,
         r.decision AS company_domain_decision,
         lower(concat_ws(
             ' ',
@@ -170,6 +171,11 @@ SELECT
     last_seen_at
 FROM classified
 WHERE
+    NOT regexp_matches(
+        title_lc,
+        '(^|[^a-z0-9])(junior|jr\.?|entry[- ]?level|intern|internship|graduate|director|executive|vp|vice president|chief)([^a-z0-9]|$)'
+    )
+    AND
     (
         (
             -- Remote is eligible by default, but explicit non-US/non-worldwide

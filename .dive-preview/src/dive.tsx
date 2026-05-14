@@ -95,7 +95,6 @@ export default function DreamJobRadar() {
     FROM ${RELEVANT_TABLE}
     WHERE ${RECENT_FILTER}
     ORDER BY coalesce(posted_at, first_seen_at) DESC NULLS LAST, company, title
-    LIMIT 10
   `);
 
   const inventoryRow = (Array.isArray(inventory.data) ? inventory.data : [])[0] ?? {};
@@ -171,7 +170,10 @@ export default function DreamJobRadar() {
         </section>
 
         <section>
-          <SectionTitle eyebrow="Recent relevant lens" title="Relevant roles posted or first observed in the last 7 days" />
+          <SectionTitle
+            eyebrow="Recent relevant lens"
+            title={`Relevant roles posted or first observed in the last 7 days (${N(recentRow.recent_roles)} total)`}
+          />
           <RecentRoles rows={roleRows} loading={roles.isLoading} />
         </section>
 

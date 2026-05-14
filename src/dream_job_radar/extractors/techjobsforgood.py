@@ -32,6 +32,12 @@ ALLOWED_IMPACT_AREAS = {
     "Partners & Advocates",
 }
 
+EXCLUDED_TITLE_PATTERNS = re.compile(
+    r"(^|[^a-z0-9])(junior|jr\.?|entry[- ]?level|intern|internship|graduate|"
+    r"director|executive|vp|vice president|chief)([^a-z0-9]|$)",
+    re.IGNORECASE,
+)
+
 
 def _strip_html(value: str) -> str:
     text = re.sub(r"<[^>]+>", " ", value)
@@ -83,10 +89,14 @@ def _parse_card(block: str) -> dict | None:
     if job_function not in ALLOWED_JOB_FUNCTIONS or not allowed_impacts:
         return None
 
+    title = _match(r'class="header job-title"[^>]*title="([^"]+)"', block)
+    if EXCLUDED_TITLE_PATTERNS.search(title):
+        return None
+
     return {
         "role_id": job_id,
         "url": f"{BASE_URL}{href}",
-        "title": _match(r'class="header job-title"[^>]*title="([^"]+)"', block),
+        "title": title,
         "company": _match(r'class="meta company-name"[^>]*title="([^"]+)"', block),
         "location": _match(r'<span class="location"[^>]*title="([^"]*)"', block),
         "salary": _match(r'<span class="salary"[^>]*title="([^"]*)"', block),
