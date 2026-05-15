@@ -9,10 +9,16 @@ const CLASSIFIER_MODEL = process.env.SOCRATICODE_PRIMER_CLASSIFIER_MODEL ?? "ope
 const CLASSIFIER_TIMEOUT_MS = Number.parseInt(process.env.SOCRATICODE_PRIMER_CLASSIFIER_TIMEOUT_MS ?? "15000", 10)
 const DEBUG_ROUTER = process.env.SOCRATICODE_PRIMER_DEBUG_ROUTER === "1"
 const CLASSIFIER_SENTINEL = "<socraticode-classifier-request>"
+const MAX_PROCESSED_MESSAGES = Number.parseInt(process.env.SOCRATICODE_PRIMER_CACHE_SIZE ?? "200", 10)
 
 let clientPromise
 let searchSucceededBySession = new Map()
 let classifierSessionIDs = new Set()
+let processedMessages = new Map()
+
+function debug(...args) {
+  if (DEBUG_ROUTER) console.warn("[socraticode-primer]", ...args)
+}
 
 function latestUserMessage(messages) {
   return [...messages].reverse().find((message) => message?.info?.role === "user")
@@ -25,6 +31,39 @@ function textFromParts(parts) {
     .filter(Boolean)
     .join("\n")
     .trim()
+}
+
+function messageKey(message) {
+  const info = message?.info
+  if (!info?.sessionID || !info?.id) return undefined
+  return `${info.sessionID}:${info.id}`
+}
+
+function hasSocraticodePart(parts) {
+  return (parts ?? []).some(
+    (part) =>
+      part?.type === "text" &&
+      typeof part.text === "string" &&
+      /<socraticode-(semantic-search|semantic-search-warning|router|router-warning)>/.test(part.text),
+  )
+}
+
+function rememberMessage(key, value) {
+  if (!key) return
+  if (processedMessages.has(key)) processedMessages.delete(key)
+  processedMessages.set(key, value)
+  const max = Number.isFinite(MAX_PROCESSED_MESSAGES) && MAX_PROCESSED_MESSAGES > 0 ? MAX_PROCESSED_MESSAGES : 200
+  while (processedMessages.size > max) {
+    const oldest = processedMessages.keys().next().value
+    if (!oldest) break
+    processedMessages.delete(oldest)
+  }
+}
+
+function replayCachedMessage(message, key, cached) {
+  debug("cache hit", key, cached.kind)
+  if (cached.text && !hasSocraticodePart(message.parts)) appendSyntheticText(message, cached.text)
+  if (cached.searchSucceeded !== undefined) searchSucceededBySession.set(message.info.sessionID, cached.searchSucceeded)
 }
 
 async function withTimeout(promise, label) {
@@ -295,39 +334,48 @@ export const SocratiCodePrimer = async ({ directory, client: opencodeClient }) =
       const latest = latestUserMessage(output.messages)
       if (!latest) return
 
+      const key = messageKey(latest)
+      const cached = key ? processedMessages.get(key) : undefined
+      if (cached) {
+        replayCachedMessage(latest, key, cached)
+        return
+      }
+
       const query = textFromParts(latest.parts)
       if (!query) return
       if (query.includes(CLASSIFIER_SENTINEL)) return
+
+      debug("cache miss", key)
 
       let decision
       try {
         decision = await classifyPrompt(query, opencodeClient, directory)
       } catch (error) {
+        const text = [
+          "<socraticode-router-warning>",
+          `SocratiCode classifier routing failed; semantic search was not run: ${error instanceof Error ? error.message : String(error)}`,
+          "</socraticode-router-warning>",
+        ].join("\n")
         searchSucceededBySession.set(latest.info.sessionID, false)
-        appendSyntheticText(
-          latest,
-          [
-            "<socraticode-router-warning>",
-            `SocratiCode classifier routing failed; semantic search was not run: ${error instanceof Error ? error.message : String(error)}`,
-            "</socraticode-router-warning>",
-          ].join("\n"),
-        )
+        rememberMessage(key, { kind: "router-warning", text, searchSucceeded: false })
+        appendSyntheticText(latest, text)
         return
       }
 
       if (!decision.search) {
         searchSucceededBySession.set(latest.info.sessionID, false)
         if (DEBUG_ROUTER) {
-          appendSyntheticText(
-            latest,
-            [
-              "<socraticode-router>",
-              `decision: skip`,
-              `model: ${CLASSIFIER_MODEL}`,
-              `reason: ${decision.reason}`,
-              "</socraticode-router>",
-            ].join("\n"),
-          )
+          const text = [
+            "<socraticode-router>",
+            `decision: skip`,
+            `model: ${CLASSIFIER_MODEL}`,
+            `reason: ${decision.reason}`,
+            "</socraticode-router>",
+          ].join("\n")
+          rememberMessage(key, { kind: "skip", text, searchSucceeded: false })
+          appendSyntheticText(latest, text)
+        } else {
+          rememberMessage(key, { kind: "skip", searchSucceeded: false })
         }
         return
       }
@@ -337,43 +385,40 @@ export const SocratiCodePrimer = async ({ directory, client: opencodeClient }) =
         if (!results) return
 
         if (isSearchWarning(results)) {
+          const text = [
+            "<socraticode-semantic-search-warning>",
+            results,
+            "If codebase discovery is needed, prefer fixing or checking SocratiCode/index status before broad grep/rg exploration.",
+            "</socraticode-semantic-search-warning>",
+          ].join("\n")
           searchSucceededBySession.set(latest.info.sessionID, false)
-          appendSyntheticText(
-            latest,
-            [
-              "<socraticode-semantic-search-warning>",
-              results,
-              "If codebase discovery is needed, prefer fixing or checking SocratiCode/index status before broad grep/rg exploration.",
-              "</socraticode-semantic-search-warning>",
-            ].join("\n"),
-          )
+          rememberMessage(key, { kind: "search-warning", text, searchSucceeded: false })
+          appendSyntheticText(latest, text)
           return
         }
 
+        const text = [
+          "<socraticode-semantic-search>",
+          `Classifier decision: search (${decision.reason})`,
+          "",
+          results,
+          "</socraticode-semantic-search>",
+          "",
+          "Use these SocratiCode semantic search results before broad grep/rg. Use grep only to verify exact symbols, strings, paths, or line references.",
+        ].join("\n")
         searchSucceededBySession.set(latest.info.sessionID, true)
-        appendSyntheticText(
-          latest,
-          [
-            "<socraticode-semantic-search>",
-            `Classifier decision: search (${decision.reason})`,
-            "",
-            results,
-            "</socraticode-semantic-search>",
-            "",
-            "Use these SocratiCode semantic search results before broad grep/rg. Use grep only to verify exact symbols, strings, paths, or line references.",
-          ].join("\n"),
-        )
+        rememberMessage(key, { kind: "search", text, searchSucceeded: true })
+        appendSyntheticText(latest, text)
       } catch (error) {
+        const text = [
+          "<socraticode-semantic-search-warning>",
+          `SocratiCode semantic search was attempted but did not complete: ${error instanceof Error ? error.message : String(error)}`,
+          "If codebase discovery is needed, prefer fixing or checking SocratiCode/index status before broad grep/rg exploration.",
+          "</socraticode-semantic-search-warning>",
+        ].join("\n")
         searchSucceededBySession.set(latest.info.sessionID, false)
-        appendSyntheticText(
-          latest,
-          [
-            "<socraticode-semantic-search-warning>",
-            `SocratiCode semantic search was attempted but did not complete: ${error instanceof Error ? error.message : String(error)}`,
-            "If codebase discovery is needed, prefer fixing or checking SocratiCode/index status before broad grep/rg exploration.",
-            "</socraticode-semantic-search-warning>",
-          ].join("\n"),
-        )
+        rememberMessage(key, { kind: "search-warning", text, searchSucceeded: false })
+        appendSyntheticText(latest, text)
       }
     },
 
